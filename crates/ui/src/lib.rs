@@ -1,5 +1,5 @@
-use iced::widget::{container, text, Column, column, Container};
-use iced::overlay::Element;
+use iced::widget::{container, text, button, column};
+use iced::Element;
 
 
 #[derive(Debug, Clone, Copy)]
@@ -19,16 +19,19 @@ impl Rainstorm {
         }
     }
 
-    pub fn view<'a>(&self) -> Column<Message> {
+    pub fn view(&self) -> Element<Message> {
         let content  = container("hellow world")
             .padding(10)
-            .center(800)
+            .center(400)
             .style(container::rounded_box);
 
 
-        let result = column![].push(content);
+        let result = column![]
+            .push(content)
+            .push(button("+").on_press(Message::Increment))
+            .push(text(self.counter));
 
-        result
+        result.into()
     }
 }   
 
