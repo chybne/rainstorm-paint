@@ -411,6 +411,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "canvas"
+version = "0.1.0"
+
+[[package]]
 name = "cc"
 version = "1.2.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"

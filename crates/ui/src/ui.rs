@@ -1,7 +1,8 @@
-use canvas_screen::CanvasScreen;
+use screens::canvas_screen::{self, CanvasScreen};
 use iced::{self, Element};
 
-mod canvas_screen;
+mod screens;
+mod widgets;
 
 pub type Result = iced::Result;
 
