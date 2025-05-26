@@ -5,6 +5,7 @@ edition = "2024"
 
 [lib]
 name = "ui"
+path = "src/ui.rs"
 
 [dependencies]
 iced = {workspace = true}

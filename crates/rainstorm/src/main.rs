@@ -1,6 +1,5 @@
-use iced;
-use ui::{self, Rainstorm};
+use ui::Rainstorm;
 
-pub fn main() -> iced::Result {
-    iced::application("my first app", Rainstorm::update, Rainstorm::view).run()
+pub fn main() -> ui::Result {
+    Rainstorm::run()
 }
