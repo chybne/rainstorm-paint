@@ -1,5 +1,6 @@
-use iced::widget::{button, text};
+use iced::widget::{button, text, column};
 use iced::Element;
+use crate::widgets::Canvas;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
@@ -20,7 +21,16 @@ impl CanvasScreen {
     }
 
     pub fn view(&self) -> Element<Message> {
-        button(text(self.counter)).on_press(Message::Increment).into()
+        let canvas = Canvas::new();
+
+        let button = button(text(self.counter)).on_press(Message::Increment);
+
+        let content = column![]
+            .push(button)
+            .push(canvas);
+
+        content.into()
+
     }
 
 

@@ -6,4 +6,13 @@ members = [ "crates/canvas",
 
 [workspace.dependencies]
 ui = { path = "crates/ui" }
-iced = "0.13.1"
+iced = { version = "0.13.1", default-features = false, features = [
+    "wgpu",
+    "tiny-skia",
+    "fira-sans",
+    "auto-detect-theme",
+    "tokio",
+    "lazy",
+    "advanced",
+    "image",
+]}
