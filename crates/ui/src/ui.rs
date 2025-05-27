@@ -1,4 +1,5 @@
 use screens::canvas_screen::{self, CanvasScreen};
+use screens::home_screen::{self, HomeScreen};
 use iced::{self, Element};
 
 mod screens;
@@ -9,12 +10,13 @@ pub type Result = iced::Result;
 #[derive(Debug, Clone, Copy)]
 enum Message {
     CanvasScreen(canvas_screen::Message),
+    HomeScreen(home_screen::Message)
 }
 
 #[derive(Debug)]
 enum Screen {
     CanvasScreen(CanvasScreen),
-    NOtcanva(CanvasScreen),
+    HomeScreen(HomeScreen),
 }
 impl Default for Screen {
     fn default() -> Self {
@@ -33,7 +35,19 @@ impl Rainstorm {
         match message {
             Message::CanvasScreen(message) => {
                 if let Screen::CanvasScreen(canvas_screen) = &mut self.screen {
-                    canvas_screen.update(message)
+                    let action = canvas_screen.update(message);
+
+                    match action {
+                        canvas_screen::Action::Nothing => (),
+                        canvas_screen::Action::ChangeScreen => {self.screen = Screen::HomeScreen(HomeScreen::default());}
+                    }
+                } else {
+                    ()
+                }
+            },
+            Message::HomeScreen(message) => {
+                if let Screen::HomeScreen(screen) = &mut self.screen {
+                    screen.update(message);
                 } else {
                     ()
                 }
@@ -43,8 +57,8 @@ impl Rainstorm {
 
     fn view(&self) -> Element<Message> {
         match &self.screen {
-            Screen::CanvasScreen(canvas_screen) => canvas_screen.view().map(Message::CanvasScreen),
-            Screen::NOtcanva(canvas_screen) => canvas_screen.view().map(Message::CanvasScreen),
+            Screen::CanvasScreen(screen) => screen.view().map(Message::CanvasScreen),
+            Screen::HomeScreen(screen) => screen.view().map(Message::HomeScreen),
         }
     }
 
