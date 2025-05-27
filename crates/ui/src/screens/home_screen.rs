@@ -22,7 +22,6 @@ impl Default for HomeScreen {
 
 impl HomeScreen {
     pub fn update(&mut self, message: Message) {
-        println!("{:?}", self.color);
         match message {
             Message::ChangeColor => {
                 self.color.r = (self.color.r + 0.1) % 1.0;
