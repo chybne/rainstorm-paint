@@ -1,13 +1,13 @@
 use screens::canvas_screen::{self, CanvasScreen};
 use screens::home_screen::{self, HomeScreen};
-use iced::{self, Element};
+use iced::{self, Element, Task};
 
 mod screens;
 mod widgets;
 
 pub type Result = iced::Result;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 enum Message {
     CanvasScreen(canvas_screen::Message),
     HomeScreen(home_screen::Message)
@@ -31,25 +31,30 @@ pub struct Rainstorm {
 }
 
 impl Rainstorm {
-    fn update(&mut self, message: Message) {
+    fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::CanvasScreen(message) => {
-                if let Screen::CanvasScreen(canvas_screen) = &mut self.screen {
-                    let action = canvas_screen.update(message);
+                let Screen::CanvasScreen(canvas_screen) = &mut self.screen else {
+                    return Task::none();
+                };
+                let action = canvas_screen.update(message);
 
-                    match action {
-                        canvas_screen::Action::Nothing => (),
-                        canvas_screen::Action::ChangeScreen => {self.screen = Screen::HomeScreen(HomeScreen::default());}
-                    }
-                } else {
-                    ()
+                match action {
+                    canvas_screen::Action::Nothing => Task::none(),
+                    canvas_screen::Action::ChangeScreen => {
+                        self.screen = Screen::HomeScreen(HomeScreen::default());
+                        Task::none()
+                    },
+                    canvas_screen::Action::Task(task) => {task.map(Message::CanvasScreen)}
                 }
+                
             },
             Message::HomeScreen(message) => {
                 if let Screen::HomeScreen(screen) = &mut self.screen {
                     screen.update(message);
+                    Task::none()
                 } else {
-                    ()
+                    Task::none()
                 }
             }
         }

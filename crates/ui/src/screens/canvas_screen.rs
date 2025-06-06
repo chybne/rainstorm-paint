@@ -1,46 +1,80 @@
-use iced::widget::{button, text, column};
-use iced::Element;
+use iced::widget::{button, text, row, column};
+use iced::{Element, Task};
 use crate::widgets::Canvas;
+use canvas;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub enum Message {
+    Ui(UiMessage),
+    CanvasLoaded(canvas::Canvas),
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum UiMessage {
     Increment,
-    ChangeScreen
+    ChangeScreen,
+    LoadCanvas,
 }
 
 pub enum Action {
     ChangeScreen,
     Nothing,
+    Task(Task<Message>),
 }
 
 #[derive(Debug, Default)]
 pub struct CanvasScreen {
     counter: u32,
+    canvases: Vec<canvas::Canvas>,
 }
 
 
 impl CanvasScreen {
+    
     pub fn update(&mut self, message: Message) -> Action {
         match message {
-            Message::Increment => {self.counter += 1; Action::Nothing},
-            Message::ChangeScreen => Action::ChangeScreen
+            Message::Ui(ui_message) => {
+                match ui_message {
+                    UiMessage::Increment => {self.counter += 1; Action::Nothing},
+                    UiMessage::ChangeScreen => Action::ChangeScreen,
+                    UiMessage::LoadCanvas => {
+                        Action::Task(Task::perform(canvas::Canvas::new(), Message::CanvasLoaded))
+                    },
+                }
+            },
+            
+            Message::CanvasLoaded(canvas) => {
+                self.canvases.push(canvas);
+                Action::Nothing
+            }
         }
     }
 
     pub fn view(&self) -> Element<Message> {
-        let canvas = Canvas::new();
 
-        let button_1 = button(text(self.counter)).on_press(Message::Increment);
-        let button_2 =  button("Click me to change screen").on_press(Message::ChangeScreen);
+        let button_1 = button(text(self.counter)).on_press(UiMessage::Increment);
+        let button_2 = button("Click me to change screen").on_press(UiMessage::ChangeScreen);
+        let button_3 = button("Click me to Load a canvas").on_press(UiMessage::LoadCanvas);
     
-        let content = column![]
+
+        let buttons = row![]
             .push(button_1)
             .push(button_2)
-            .push(canvas);
+            .push(button_3);
 
-        content.into()
+        let mut content = column![]
+            .push(buttons);
 
+
+        for _canvas in &self.canvases {
+
+
+            content = content.push(Canvas::new());
+        }
+
+        let content: Element<'_, UiMessage> = content.into();
+
+        content.map(Message::Ui)
     }
-
 
 }

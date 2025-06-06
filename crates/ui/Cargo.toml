@@ -8,4 +8,6 @@ name = "ui"
 path = "src/ui.rs"
 
 [dependencies]
-iced = {workspace = true}
+canvas = {workspace = true}
+iced = {version = "0.13.1", features = ["default", "advanced", "image"]}
+iced_wgpu = "0.13.1"

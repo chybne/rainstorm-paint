@@ -1,18 +1,12 @@
 [workspace]
 resolver = "3"
-members = [ "crates/canvas",
-    "crates/rainstorm", "crates/ui",
+members = [ 
+    "crates/canvas",
+    "crates/rainstorm", 
+    "crates/ui",
 ]
 
 [workspace.dependencies]
 ui = { path = "crates/ui" }
-iced = { version = "0.13.1", default-features = false, features = [
-    "wgpu",
-    "tiny-skia",
-    "fira-sans",
-    "auto-detect-theme",
-    "tokio",
-    "lazy",
-    "advanced",
-    "image",
-]}
+canvas = { path = "crates/canvas" }
+

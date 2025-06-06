@@ -4,3 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+tokio = "1.45.1"
+wgpu = "25.0.2"

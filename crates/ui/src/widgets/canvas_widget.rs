@@ -1,16 +1,17 @@
-
-
 use iced::advanced::{Widget, layout::Node, renderer};
 use iced::{self, Border, Color, Element, Length, Size};
 use iced::border::radius;
 
+#[derive(Debug, Copy, Clone)]
 pub struct Canvas {
-
+    
 }
 
 impl Canvas {
     pub fn new() -> Self {
-        Self {}
+
+        Self {
+        }
     }
 }
 
@@ -43,6 +44,7 @@ impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Canvas
             _viewport: &iced::Rectangle,
         ) {
 
+
         renderer.fill_quad(renderer::Quad {
             bounds: layout.bounds(),
             border: Border {
@@ -51,6 +53,7 @@ impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Canvas
             },
             shadow: Default::default()
         }, Color::BLACK);
+
         
     }
 
