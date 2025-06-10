@@ -3492,6 +3492,7 @@ version = "0.1.0"
 dependencies = [
  "canvas",
  "iced",
+ "iced_core",
  "iced_wgpu",
 ]
 

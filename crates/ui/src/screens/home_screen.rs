@@ -1,6 +1,5 @@
-
-use iced::{Background, Border, Color, Element};
 use iced::widget::button;
+use iced::{Background, Border, Color, Element};
 
 #[derive(Clone, Debug, Copy)]
 pub enum Message {
@@ -32,19 +31,17 @@ impl HomeScreen {
     }
 
     pub fn view(&self) -> Element<Message> {
-
         let button = button("Hi, Im a button")
-            .style(|_theme, _status| {
-                button::Style {
-                    background: Some(Background::Color(self.color)),
-                    border: Border {
-                        color: Color::WHITE,
-                        width: 1.0,
-                        ..Default::default()
-                    },
+            .style(|_theme, _status| button::Style {
+                background: Some(Background::Color(self.color)),
+                border: Border {
+                    color: Color::WHITE,
+                    width: 1.0,
                     ..Default::default()
-                }
-            }).on_press(Message::ChangeColor);
+                },
+                ..Default::default()
+            })
+            .on_press(Message::ChangeColor);
 
         button.into()
     }

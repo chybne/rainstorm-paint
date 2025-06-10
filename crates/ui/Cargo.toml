@@ -11,3 +11,4 @@ path = "src/ui.rs"
 canvas = {workspace = true}
 iced = {version = "0.13.1", features = ["default", "advanced", "image"]}
 iced_wgpu = "0.13.1"
+iced_core = "0.13.2"
