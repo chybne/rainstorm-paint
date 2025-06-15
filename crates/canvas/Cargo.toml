@@ -3,6 +3,10 @@ name = "canvas"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "canvas"
+path = "src/canvas.rs"
+
 [dependencies]
 tokio = "1.45.1"
 wgpu = "25.0.2"
