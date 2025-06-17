@@ -8,7 +8,8 @@ name = "ui"
 path = "src/ui.rs"
 
 [dependencies]
-canvas = {workspace = true}
-iced = {version = "0.13.1", features = ["default", "advanced", "image"]}
+canvas = { workspace = true }
+iced = { version = "0.13.1", features = ["default", "advanced", "image"] }
 iced_wgpu = "0.13.1"
 iced_core = "0.13.2"
+bytemuck = { version = "1.16", features = ["derive"] }

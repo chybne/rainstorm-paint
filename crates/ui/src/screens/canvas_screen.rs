@@ -1,9 +1,9 @@
 #[allow(unused_imports)]
-use crate::widgets::Canvas;
-use crate::widgets::canvas_widget;
+use crate::widgets::CanvasWidget;
 use canvas;
 use iced::widget::{Shader, button, column, row, text};
 use iced::{Element, Task};
+use std::sync::{Arc, RwLock};
 
 #[derive(Debug)]
 pub enum Message {
@@ -27,7 +27,7 @@ pub enum Action {
 #[derive(Debug, Default)]
 pub struct CanvasScreen {
     counter: u32,
-    canvases: Vec<canvas::Canvas>,
+    canvases: Vec<Arc<RwLock<canvas::Canvas>>>,
 }
 
 impl CanvasScreen {
@@ -45,7 +45,7 @@ impl CanvasScreen {
             },
 
             Message::CanvasLoaded(canvas) => {
-                self.canvases.push(canvas);
+                self.canvases.push(Arc::new(RwLock::new(canvas)));
                 Action::Nothing
             }
         }
@@ -56,17 +56,16 @@ impl CanvasScreen {
         let button_2 = button("Click me to change screen").on_press(UiMessage::ChangeScreen);
         let button_3 = button("Click me to Load a canvas").on_press(UiMessage::LoadCanvas);
 
-        let shader: Shader<UiMessage, canvas_widget::Canvas> =
-            iced::widget::shader::Shader::new(Canvas::new());
-
         let buttons = row![].push(button_1).push(button_2).push(button_3);
 
         #[allow(unused_mut)]
-        let mut content = column![].push(buttons).push(shader);
+        let mut content = column![].push(buttons);
 
-        for _canvas in &self.canvases {
-
-            // content = content.push(Canvas::new());
+        for canvas in &self.canvases {
+            let shader = Shader::new(CanvasWidget::new(canvas.clone()))
+                .width(500)
+                .height(500);
+            content = content.push(shader);
         }
 
         let content: Element<'_, UiMessage> = content.into();

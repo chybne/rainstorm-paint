@@ -3490,6 +3490,7 @@ dependencies = [
 name = "ui"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "canvas",
  "iced",
  "iced_core",

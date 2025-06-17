@@ -1,20 +1,28 @@
+mod canvas_pipeline;
+
+use bytemuck::checked::cast_mut;
+use canvas::Canvas;
+use canvas_pipeline::CanvasPipeline;
+
 use iced::advanced::{Widget, layout::Node, renderer};
 use iced::border::radius;
 use iced::widget::shader::{self, wgpu};
-use iced::{self, Border, Color, Element, Length, Size};
-use iced_wgpu::wgpu::RenderPipeline;
+use iced::{self, Border, Color, Element, Length, Size, window};
+use std::sync::{Arc, RwLock};
 
-#[derive(Debug, Copy, Clone)]
-pub struct Canvas {}
+#[derive(Debug, Clone)]
+pub struct CanvasWidget {
+    canvas: Arc<RwLock<Canvas>>,
+}
 
-impl Canvas {
-    pub fn new() -> Self {
-        Self {}
+impl CanvasWidget {
+    pub fn new(canvas: Arc<RwLock<Canvas>>) -> Self {
+        Self { canvas }
     }
 }
 
 /* Bare bones basics for now */
-impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Canvas
+impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for CanvasWidget
 where
     Renderer: renderer::Renderer + iced_core::text::Renderer,
 {
@@ -55,39 +63,116 @@ where
     }
 }
 
-impl<'a, Message, Theme, Renderer> From<Canvas> for Element<'a, Message, Theme, Renderer>
+impl<'a, Message, Theme, Renderer> From<CanvasWidget> for Element<'a, Message, Theme, Renderer>
 where
     Renderer: renderer::Renderer + iced_core::text::Renderer,
 {
-    fn from(value: Canvas) -> Self {
+    fn from(value: CanvasWidget) -> Self {
         Self::new(value)
     }
 }
 
-impl<Message> shader::Program<Message> for Canvas {
-    type State = ();
+#[derive(Default)]
+pub struct CanvasState {
+    is_painting: bool,
+}
+
+impl CanvasState {
+    pub fn set_is_painting(&mut self, is_painting: bool) {
+        self.is_painting = is_painting;
+    }
+}
+
+/* temp struct */
+#[derive(Debug)]
+struct CanvasPosition {
+    x: u32,
+    y: u32,
+}
+
+impl<Message> shader::Program<Message> for CanvasWidget {
+    type State = CanvasState;
     type Primitive = CanvasPrimitive;
     fn draw(
         &self,
         _state: &Self::State,
         _cursor: iced_core::mouse::Cursor,
-        bounds: iced::Rectangle,
+        _bounds: iced::Rectangle,
     ) -> Self::Primitive {
-        CanvasPrimitive::new(bounds)
+        CanvasPrimitive::new(self.canvas.clone())
+    }
+    fn update(
+        &self,
+        state: &mut Self::State,
+        event: iced::widget::shader::Event,
+        bounds: iced::Rectangle,
+        cursor: iced_core::mouse::Cursor,
+        shell: &mut iced_core::Shell<'_, Message>,
+    ) -> (iced_core::event::Status, Option<Message>) {
+        use iced::mouse;
+        use iced::widget::shader::Event;
+
+        let canvas = self.canvas.read().unwrap();
+        /* Not the actual canvas position, canvas width and widget with are not linked */
+        let canvas_position: Option<CanvasPosition> = match cursor {
+            mouse::Cursor::Available(point) => {
+                if point.x < bounds.x + bounds.width
+                    && point.x > bounds.x
+                    && point.y > bounds.y
+                    && point.y < bounds.y + bounds.height
+                {
+                    Some(CanvasPosition {
+                        x: (((point.x - bounds.x) * canvas.width() as f32) / bounds.width) as u32,
+                        y: (((point.y - bounds.y) * canvas.height() as f32) / bounds.height) as u32,
+                    })
+                } else {
+                    None
+                }
+            }
+            mouse::Cursor::Unavailable => None,
+        };
+
+        drop(canvas);
+        // println!("{cursor:?} {bounds:?} {canvas_position:?}");
+
+        match event {
+            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
+                // println!("mouse is pressed");
+                state.set_is_painting(true);
+                if let Some(position) = canvas_position {
+                    let mut canvas_mut = self.canvas.write().unwrap();
+                    canvas_mut.draw_pixel(position.x, position.y);
+                }
+                (iced::event::Status::Captured, None)
+            }
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
+                // println!("mouse is released");
+                state.set_is_painting(false);
+                (iced::event::Status::Captured, None)
+            }
+            Event::Mouse(mouse::Event::CursorMoved { position }) if state.is_painting => {
+                // println!("mouse moved to {position:?}");
+                if let Some(position) = canvas_position {
+                    let mut canvas_mut = self.canvas.write().unwrap();
+                    canvas_mut.draw_pixel(position.x, position.y);
+                }
+                (iced::event::Status::Captured, None)
+            }
+            _ => (iced::event::Status::Ignored, None),
+        }
     }
 }
 
 /* Implement a Primitive to render a Canvas Buffer on screen */
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct CanvasPrimitive {
-    bounds: iced::Rectangle,
+    canvas: Arc<RwLock<Canvas>>,
 }
 
 impl CanvasPrimitive {
-    fn new(bounds: iced::Rectangle) -> Self {
-        Self { bounds }
+    fn new(canvas: Arc<RwLock<Canvas>>) -> Self {
+        Self { canvas }
     }
 }
 
@@ -95,55 +180,19 @@ impl CanvasPrimitive {
 impl iced::widget::shader::Primitive for CanvasPrimitive {
     fn prepare(
         &self,
-        device: &iced_wgpu::wgpu::Device,
+        device: &wgpu::Device,
         queue: &iced_wgpu::wgpu::Queue,
         format: iced_wgpu::wgpu::TextureFormat,
         storage: &mut iced_wgpu::primitive::Storage,
         bounds: &iced::Rectangle,
         viewport: &iced_wgpu::graphics::Viewport,
     ) {
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("basicShader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("./temp.wgsl").into()),
-        });
-
-        let render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Render Pipeline layout"),
-                bind_group_layouts: &[],
-                push_constant_ranges: &[],
-            });
-
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                buffers: &[],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-        });
-
-        if !storage.has::<RenderPipeline>() {
-            storage.store(render_pipeline)
+        if !storage.has::<CanvasPipeline>() {
+            storage.store(CanvasPipeline::new(device, queue, format, &self.canvas));
         }
+
+        let pipeline = storage.get_mut::<CanvasPipeline>().unwrap();
+        pipeline.update(device, queue, format, &self.canvas);
     }
     fn render(
         &self,
@@ -152,35 +201,7 @@ impl iced::widget::shader::Primitive for CanvasPrimitive {
         target: &iced_wgpu::wgpu::TextureView,
         clip_bounds: &iced::Rectangle<u32>,
     ) {
-        // println!("{clip_bounds:?}");
-
-        let pipeline = storage.get::<RenderPipeline>().unwrap();
-
-        {
-            #[allow(unused_mut)]
-            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Test View"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &target,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            pass.set_scissor_rect(
-                clip_bounds.x,
-                clip_bounds.y,
-                clip_bounds.width,
-                clip_bounds.height,
-            );
-            pass.set_pipeline(pipeline);
-            pass.draw(0..3, 0..1);
-        }
+        let canvas_pipeline = storage.get::<CanvasPipeline>().unwrap();
+        canvas_pipeline.render(encoder, target, clip_bounds);
     }
 }
