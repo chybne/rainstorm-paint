@@ -1,23 +1,24 @@
 mod canvas_pipeline;
 
-use bytemuck::checked::cast_mut;
 use canvas::Canvas;
 use canvas_pipeline::CanvasPipeline;
 
 use iced::advanced::{Widget, layout::Node, renderer};
 use iced::border::radius;
 use iced::widget::shader::{self, wgpu};
-use iced::{self, Border, Color, Element, Length, Size, window};
+use iced::{self, Border, Color, Element, Length, Size};
+use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Clone)]
 pub struct CanvasWidget {
     canvas: Arc<RwLock<Canvas>>,
+    canvas_id: u32,
 }
 
 impl CanvasWidget {
-    pub fn new(canvas: Arc<RwLock<Canvas>>) -> Self {
-        Self { canvas }
+    pub fn new(canvas: Arc<RwLock<Canvas>>, canvas_id: u32) -> Self {
+        Self { canvas, canvas_id }
     }
 }
 
@@ -99,7 +100,7 @@ impl<Message> shader::Program<Message> for CanvasWidget {
         _cursor: iced_core::mouse::Cursor,
         _bounds: iced::Rectangle,
     ) -> Self::Primitive {
-        CanvasPrimitive::new(self.canvas.clone())
+        CanvasPrimitive::new(self.canvas.clone(), self.canvas_id)
     }
     fn update(
         &self,
@@ -107,7 +108,7 @@ impl<Message> shader::Program<Message> for CanvasWidget {
         event: iced::widget::shader::Event,
         bounds: iced::Rectangle,
         cursor: iced_core::mouse::Cursor,
-        shell: &mut iced_core::Shell<'_, Message>,
+        _shell: &mut iced_core::Shell<'_, Message>,
     ) -> (iced_core::event::Status, Option<Message>) {
         use iced::mouse;
         use iced::widget::shader::Event;
@@ -150,7 +151,7 @@ impl<Message> shader::Program<Message> for CanvasWidget {
                 state.set_is_painting(false);
                 (iced::event::Status::Captured, None)
             }
-            Event::Mouse(mouse::Event::CursorMoved { position }) if state.is_painting => {
+            Event::Mouse(mouse::Event::CursorMoved { position: _ }) if state.is_painting => {
                 // println!("mouse moved to {position:?}");
                 if let Some(position) = canvas_position {
                     let mut canvas_mut = self.canvas.write().unwrap();
@@ -168,11 +169,12 @@ impl<Message> shader::Program<Message> for CanvasWidget {
 #[derive(Debug)]
 pub struct CanvasPrimitive {
     canvas: Arc<RwLock<Canvas>>,
+    canvas_id: u32,
 }
 
 impl CanvasPrimitive {
-    fn new(canvas: Arc<RwLock<Canvas>>) -> Self {
-        Self { canvas }
+    fn new(canvas: Arc<RwLock<Canvas>>, canvas_id: u32) -> Self {
+        Self { canvas, canvas_id }
     }
 }
 
@@ -181,27 +183,38 @@ impl iced::widget::shader::Primitive for CanvasPrimitive {
     fn prepare(
         &self,
         device: &wgpu::Device,
-        queue: &iced_wgpu::wgpu::Queue,
-        format: iced_wgpu::wgpu::TextureFormat,
-        storage: &mut iced_wgpu::primitive::Storage,
+        queue: &wgpu::Queue,
+        format: wgpu::TextureFormat,
+        storage: &mut shader::Storage,
         bounds: &iced::Rectangle,
-        viewport: &iced_wgpu::graphics::Viewport,
+        viewport: &shader::Viewport,
     ) {
-        if !storage.has::<CanvasPipeline>() {
-            storage.store(CanvasPipeline::new(device, queue, format, &self.canvas));
+        /*
+         * still need to replace a canvas pipeline if the size changes
+         */
+        if !storage.has::<HashMap<u32, CanvasPipeline>>() {
+            storage.store::<HashMap<u32, CanvasPipeline>>(HashMap::new());
         }
 
-        let pipeline = storage.get_mut::<CanvasPipeline>().unwrap();
+        let canvases = storage.get_mut::<HashMap<u32, CanvasPipeline>>().unwrap();
+
+        let pipeline = canvases
+            .entry(self.canvas_id)
+            .or_insert(CanvasPipeline::new(device, queue, format, &self.canvas));
+
         pipeline.update(device, queue, format, &self.canvas);
     }
     fn render(
         &self,
-        encoder: &mut iced_wgpu::wgpu::CommandEncoder,
-        storage: &iced_wgpu::primitive::Storage,
-        target: &iced_wgpu::wgpu::TextureView,
+        encoder: &mut wgpu::CommandEncoder,
+        storage: &shader::Storage,
+        target: &wgpu::TextureView,
         clip_bounds: &iced::Rectangle<u32>,
     ) {
-        let canvas_pipeline = storage.get::<CanvasPipeline>().unwrap();
+        let canvases = storage.get::<HashMap<u32, CanvasPipeline>>().unwrap();
+
+        let canvas_pipeline = canvases.get(&self.canvas_id).unwrap();
+
         canvas_pipeline.render(encoder, target, clip_bounds);
     }
 }

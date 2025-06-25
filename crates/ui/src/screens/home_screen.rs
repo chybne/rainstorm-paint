@@ -14,7 +14,7 @@ pub struct HomeScreen {
 impl Default for HomeScreen {
     fn default() -> Self {
         Self {
-            color: Color::new(0f32, 0f32, 0f32, 1f32),
+            color: Color::from_rgba(0f32, 0f32, 0f32, 1f32),
         }
     }
 }

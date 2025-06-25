@@ -61,8 +61,8 @@ impl CanvasScreen {
         #[allow(unused_mut)]
         let mut content = column![].push(buttons);
 
-        for canvas in &self.canvases {
-            let shader = Shader::new(CanvasWidget::new(canvas.clone()))
+        for (i, canvas) in self.canvases.iter().enumerate() {
+            let shader = Shader::new(CanvasWidget::new(canvas.clone(), i as u32))
                 .width(500)
                 .height(500);
             content = content.push(shader);

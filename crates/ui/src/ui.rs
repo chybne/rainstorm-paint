@@ -1,6 +1,6 @@
+use iced::{self, Element, Task};
 use screens::canvas_screen::{self, CanvasScreen};
 use screens::home_screen::{self, HomeScreen};
-use iced::{self, Element, Task};
 
 mod screens;
 mod widgets;
@@ -10,7 +10,7 @@ pub type Result = iced::Result;
 #[derive(Debug)]
 enum Message {
     CanvasScreen(canvas_screen::Message),
-    HomeScreen(home_screen::Message)
+    HomeScreen(home_screen::Message),
 }
 
 #[derive(Debug)]
@@ -44,11 +44,10 @@ impl Rainstorm {
                     canvas_screen::Action::ChangeScreen => {
                         self.screen = Screen::HomeScreen(HomeScreen::default());
                         Task::none()
-                    },
-                    canvas_screen::Action::Task(task) => {task.map(Message::CanvasScreen)}
+                    }
+                    canvas_screen::Action::Task(task) => task.map(Message::CanvasScreen),
                 }
-                
-            },
+            }
             Message::HomeScreen(message) => {
                 if let Screen::HomeScreen(screen) = &mut self.screen {
                     screen.update(message);
