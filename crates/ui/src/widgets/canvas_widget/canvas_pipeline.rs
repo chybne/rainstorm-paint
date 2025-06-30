@@ -1,6 +1,9 @@
+mod canvas_texture;
+
 use canvas::Canvas;
 
 use bytemuck;
+use glam;
 use iced::widget::shader::wgpu;
 use iced_wgpu::wgpu::util::DeviceExt;
 use std::sync::{Arc, RwLock};
@@ -9,6 +12,7 @@ pub struct CanvasPipeline {
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     diffuse_bind_group: wgpu::BindGroup,
+    uniform_bind_group: wgpu::BindGroup,
     diffuse_texture: wgpu::Texture,
 }
 
@@ -18,6 +22,7 @@ impl CanvasPipeline {
         queue: &wgpu::Queue,
         format: wgpu::TextureFormat,
         canvas: &Arc<RwLock<Canvas>>,
+        bounds: &iced::Rectangle,
     ) -> Self {
         let canvas = canvas.read().unwrap();
 
@@ -106,6 +111,43 @@ impl CanvasPipeline {
             label: Some("diffuse bind group"),
         });
 
+        /* Aspect Ratio and Tranformation */
+        let ortho = glam::Mat4::orthographic_lh(0.0, bounds.width, bounds.height, 0.0, 0.0, 1.0);
+
+        let uniforms = Uniforms {
+            projection: ortho.to_cols_array_2d(),
+        };
+
+        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("uniform buffer"),
+            contents: bytemuck::cast_slice(&[uniforms]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let uniform_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("uniform buffer layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Uniform Bind Group"),
+            layout: &uniform_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
+
         /* Render Pipeline stuff */
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("basicShader"),
@@ -115,7 +157,7 @@ impl CanvasPipeline {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline layout"),
-                bind_group_layouts: &[&texture_bind_group_layout],
+                bind_group_layouts: &[&texture_bind_group_layout, &uniform_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -141,11 +183,9 @@ impl CanvasPipeline {
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw, // 2.
                 cull_mode: Some(wgpu::Face::Back),
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+
                 polygon_mode: wgpu::PolygonMode::Fill,
-                // Requires Features::DEPTH_CLIP_CONTROL
                 unclipped_depth: false,
-                // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
             depth_stencil: None,
@@ -166,6 +206,7 @@ impl CanvasPipeline {
         Self {
             pipeline: render_pipeline,
             diffuse_bind_group,
+            uniform_bind_group,
             vertex_buffer,
             diffuse_texture,
         }
@@ -239,6 +280,7 @@ impl CanvasPipeline {
             pass.set_pipeline(&self.pipeline);
             pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+            pass.set_bind_group(1, &self.uniform_bind_group, &[]);
             pass.draw(0..num_vertices, 0..1);
         }
     }
@@ -248,7 +290,7 @@ impl CanvasPipeline {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
-    position: [f32; 3],
+    position: [f32; 2],
     tex_coords: [f32; 2],
 }
 
@@ -261,10 +303,10 @@ impl Vertex {
                 wgpu::VertexAttribute {
                     offset: 0,
                     shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
+                    format: wgpu::VertexFormat::Float32x2,
                 },
                 wgpu::VertexAttribute {
-                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+                    offset: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
                     shader_location: 1,
                     format: wgpu::VertexFormat::Float32x2,
                 },
@@ -276,32 +318,38 @@ impl Vertex {
 const VERTICES: &[Vertex] = &[
     Vertex {
         // Top Right
-        position: [1.0, 1.0, 0.0],
+        position: [200.0, 0.0], // 200, 0.0
         tex_coords: [1.0, 0.0],
     },
     Vertex {
         // Top Left
-        position: [-1.0, 1.0, 0.0],
+        position: [0.0, 0.0], // 0.0, 0.0
         tex_coords: [0.0, 0.0],
     },
     Vertex {
         // Bottom Left
-        position: [-1.0, -1.0, 0.0],
+        position: [0.0, 200.0], // 0.0, 200
         tex_coords: [0.0, 1.0],
     },
     Vertex {
         // Top Right
-        position: [1.0, 1.0, 0.0],
+        position: [200.0, 0.0], // 200, 0.0
         tex_coords: [1.0, 0.0],
     },
     Vertex {
         // Bottom Left
-        position: [-1.0, -1.0, 0.0],
+        position: [0.0, 200.0], // 0.0, 200
         tex_coords: [0.0, 1.0],
     },
     Vertex {
         // Bottom Right
-        position: [1.0, -1.0, 0.0],
+        position: [200.0, 200.0], // 200, 200
         tex_coords: [1.0, 1.0],
     },
 ];
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct Uniforms {
+    projection: [[f32; 4]; 4],
+}

@@ -110,6 +110,8 @@ impl<Message> shader::Program<Message> for CanvasWidget {
         cursor: iced_core::mouse::Cursor,
         _shell: &mut iced_core::Shell<'_, Message>,
     ) -> (iced_core::event::Status, Option<Message>) {
+        println!("{event:?}");
+
         use iced::mouse;
         use iced::widget::shader::Event;
 
@@ -117,14 +119,12 @@ impl<Message> shader::Program<Message> for CanvasWidget {
         /* Not the actual canvas position, canvas width and widget with are not linked */
         let canvas_position: Option<CanvasPosition> = match cursor {
             mouse::Cursor::Available(point) => {
-                if point.x < bounds.x + bounds.width
-                    && point.x > bounds.x
-                    && point.y > bounds.y
-                    && point.y < bounds.y + bounds.height
-                {
+                let (x, y) = (point.x - bounds.x, point.y - bounds.y);
+
+                if x > 0.0 && x < canvas.width() as f32 && y > 0.0 && y < canvas.height() as f32 {
                     Some(CanvasPosition {
-                        x: (((point.x - bounds.x) * canvas.width() as f32) / bounds.width) as u32,
-                        y: (((point.y - bounds.y) * canvas.height() as f32) / bounds.height) as u32,
+                        x: x as u32,
+                        y: y as u32,
                     })
                 } else {
                     None
@@ -132,7 +132,6 @@ impl<Message> shader::Program<Message> for CanvasWidget {
             }
             mouse::Cursor::Unavailable => None,
         };
-
         drop(canvas);
         // println!("{cursor:?} {bounds:?} {canvas_position:?}");
 
@@ -199,8 +198,8 @@ impl iced::widget::shader::Primitive for CanvasPrimitive {
         let canvases = storage.get_mut::<HashMap<u32, CanvasPipeline>>().unwrap();
 
         let pipeline = canvases
-            .entry(self.canvas_id)
-            .or_insert(CanvasPipeline::new(device, queue, format, &self.canvas));
+            .entry(self.canvas_id.clone())
+            .or_insert_with(|| CanvasPipeline::new(device, queue, format, &self.canvas, bounds));
 
         pipeline.update(device, queue, format, &self.canvas);
     }
