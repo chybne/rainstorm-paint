@@ -110,8 +110,6 @@ impl<Message> shader::Program<Message> for CanvasWidget {
         cursor: iced_core::mouse::Cursor,
         _shell: &mut iced_core::Shell<'_, Message>,
     ) -> (iced_core::event::Status, Option<Message>) {
-        println!("{event:?}");
-
         use iced::mouse;
         use iced::widget::shader::Event;
 
@@ -133,7 +131,6 @@ impl<Message> shader::Program<Message> for CanvasWidget {
             mouse::Cursor::Unavailable => None,
         };
         drop(canvas);
-        // println!("{cursor:?} {bounds:?} {canvas_position:?}");
 
         match event {
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {

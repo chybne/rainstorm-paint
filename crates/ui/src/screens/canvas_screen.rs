@@ -1,4 +1,3 @@
-#[allow(unused_imports)]
 use crate::widgets::CanvasWidget;
 use canvas;
 use iced::widget::{Shader, button, column, row, text};
@@ -58,7 +57,6 @@ impl CanvasScreen {
 
         let buttons = row![].push(button_1).push(button_2).push(button_3);
 
-        #[allow(unused_mut)]
         let mut content = column![].push(buttons);
 
         for (i, canvas) in self.canvases.iter().enumerate() {
