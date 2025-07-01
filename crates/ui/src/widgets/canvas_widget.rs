@@ -203,7 +203,7 @@ impl iced::widget::shader::Primitive for CanvasPrimitive {
 
         let canvases = storage.get_mut::<HashMap<u32, CanvasPipeline>>().unwrap();
 
-        let pipeline = canvases
+        let mut pipeline = canvases
             .entry(self.canvas_id.clone())
             .or_insert_with(|| CanvasPipeline::new(device, queue, format, &self.canvas, bounds));
 
@@ -212,11 +212,11 @@ impl iced::widget::shader::Primitive for CanvasPrimitive {
                 self.canvas_id,
                 CanvasPipeline::new(device, queue, format, &self.canvas, bounds),
             );
-        }
 
-        let pipeline = canvases
-            .entry(self.canvas_id.clone())
-            .or_insert_with(|| CanvasPipeline::new(device, queue, format, &self.canvas, bounds));
+            pipeline = canvases
+                .get_mut(&self.canvas_id)
+                .expect("the canvas should exist");
+        }
 
         pipeline.update(device, queue, format, &self.canvas);
     }

@@ -12,7 +12,7 @@ pub struct Canvas {
 
 impl Default for Canvas {
     fn default() -> Self {
-        let size = 200 * 200 * 4;
+        let size = 500 * 500 * 4;
         let pattern = [51, 153, 255, 255];
 
         let pixels: Vec<u8> = pattern.iter().cycle().take(size).cloned().collect();
@@ -21,8 +21,8 @@ impl Default for Canvas {
         let inverse_matrix = glam::Mat4::IDENTITY;
 
         Self {
-            width: 200,
-            height: 200,
+            width: 500,
+            height: 500,
             pixels,
             trans_matrix,
             inverse_matrix,

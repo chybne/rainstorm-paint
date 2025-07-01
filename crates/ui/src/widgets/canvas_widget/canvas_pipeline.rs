@@ -71,8 +71,6 @@ impl CanvasPipeline {
         let ortho = glam::Mat4::orthographic_lh(0.0, bounds.width, bounds.height, 0.0, 0.0, 1.0);
         let trans_mat = canvas.read().unwrap().trans_matrix();
 
-        println!("{trans_mat:?}");
-
         let uniforms = Uniforms {
             projection: ortho.to_cols_array_2d(),
             transformation: trans_mat,
