@@ -8,8 +8,13 @@ struct VertexOutput {
     @location(0) tex_coords: vec2<f32>,
 };
 
+struct Uniform {
+    projection: mat4x4<f32>,
+    transformation: mat4x4<f32>,
+}
+
 @group(1) @binding(0)
-var<uniform> projection: mat4x4<f32>;
+var<uniform> uni: Uniform;
 
 @vertex
 fn vs_main(
@@ -17,7 +22,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.tex_coords = model.tex_coords;
-    out.clip_position = projection * vec4<f32>(model.position, 0.0, 1.0);
+    out.clip_position = uni.projection * uni.transformation * vec4<f32>(model.position, 0.0, 1.0);
     return out;
 }
 

@@ -1,3 +1,4 @@
+use super::Vertex;
 use canvas::Canvas;
 use iced::widget::shader::wgpu;
 use std::sync::{Arc, RwLock};
@@ -7,6 +8,7 @@ pub struct CanvasTexture {
     pub texture: wgpu::Texture,
     pub texture_view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
+    pub vertices: [Vertex; 6],
 }
 
 impl CanvasTexture {
@@ -42,11 +44,48 @@ impl CanvasTexture {
             ..Default::default()
         });
 
+        let width: f32 = canvas.width() as f32;
+        let height: f32 = canvas.height() as f32;
+
+        let vertices = [
+            Vertex {
+                // Top Right
+                position: [width, 0.0], // 200, 0.0
+                tex_coords: [1.0, 0.0],
+            },
+            Vertex {
+                // Top Left
+                position: [0.0, 0.0], // 0.0, 0.0
+                tex_coords: [0.0, 0.0],
+            },
+            Vertex {
+                // Bottom Left
+                position: [0.0, height], // 0.0, 200
+                tex_coords: [0.0, 1.0],
+            },
+            Vertex {
+                // Top Right
+                position: [width, 0.0], // 200, 0.0
+                tex_coords: [1.0, 0.0],
+            },
+            Vertex {
+                // Bottom Left
+                position: [0.0, height], // 0.0, 200
+                tex_coords: [0.0, 1.0],
+            },
+            Vertex {
+                // Bottom Right
+                position: [width, height], // 200, 200
+                tex_coords: [1.0, 1.0],
+            },
+        ];
+
         Self {
             size,
             texture,
             texture_view,
             sampler,
+            vertices,
         }
     }
 

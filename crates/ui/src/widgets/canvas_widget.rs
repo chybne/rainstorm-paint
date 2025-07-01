@@ -117,7 +117,15 @@ impl<Message> shader::Program<Message> for CanvasWidget {
         /* Not the actual canvas position, canvas width and widget with are not linked */
         let canvas_position: Option<CanvasPosition> = match cursor {
             mouse::Cursor::Available(point) => {
-                let (x, y) = (point.x - bounds.x, point.y - bounds.y);
+                let (mut x, mut y) = (point.x - bounds.x, point.y - bounds.y);
+
+                if bounds.contains(point) {
+                    let translated_points =
+                        glam::Mat4::from_cols_array_2d(&canvas.inverse_matrix())
+                            * glam::Vec4::new(x, y, 0.0, 1.0);
+                    x = translated_points.x;
+                    y = translated_points.y;
+                }
 
                 if x > 0.0 && x < canvas.width() as f32 && y > 0.0 && y < canvas.height() as f32 {
                     Some(CanvasPosition {
@@ -135,8 +143,9 @@ impl<Message> shader::Program<Message> for CanvasWidget {
         match event {
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
                 // println!("mouse is pressed");
-                state.set_is_painting(true);
+
                 if let Some(position) = canvas_position {
+                    state.set_is_painting(true);
                     let mut canvas_mut = self.canvas.write().unwrap();
                     canvas_mut.draw_pixel(position.x, position.y);
                 }
@@ -193,6 +202,17 @@ impl iced::widget::shader::Primitive for CanvasPrimitive {
         }
 
         let canvases = storage.get_mut::<HashMap<u32, CanvasPipeline>>().unwrap();
+
+        let pipeline = canvases
+            .entry(self.canvas_id.clone())
+            .or_insert_with(|| CanvasPipeline::new(device, queue, format, &self.canvas, bounds));
+
+        if pipeline.bounds != *bounds {
+            canvases.insert(
+                self.canvas_id,
+                CanvasPipeline::new(device, queue, format, &self.canvas, bounds),
+            );
+        }
 
         let pipeline = canvases
             .entry(self.canvas_id.clone())

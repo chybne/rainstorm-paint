@@ -1,6 +1,8 @@
 mod canvas_texture;
+mod vertex;
 
 use canvas::Canvas;
+use vertex::Vertex;
 
 use bytemuck;
 use glam;
@@ -10,9 +12,12 @@ use std::sync::{Arc, RwLock};
 pub struct CanvasPipeline {
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
+    uniform_buffer: wgpu::Buffer,
     diffuse_bind_group: wgpu::BindGroup,
     uniform_bind_group: wgpu::BindGroup,
     texture: canvas_texture::CanvasTexture,
+    /* hacky solution might think of better way */
+    pub bounds: iced::Rectangle,
 }
 
 impl CanvasPipeline {
@@ -24,7 +29,6 @@ impl CanvasPipeline {
         bounds: &iced::Rectangle,
     ) -> Self {
         let texture = canvas_texture::CanvasTexture::new(device, canvas);
-
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
@@ -65,9 +69,13 @@ impl CanvasPipeline {
 
         /* Aspect Ratio and Tranformation */
         let ortho = glam::Mat4::orthographic_lh(0.0, bounds.width, bounds.height, 0.0, 0.0, 1.0);
+        let trans_mat = canvas.read().unwrap().trans_matrix();
+
+        println!("{trans_mat:?}");
 
         let uniforms = Uniforms {
             projection: ortho.to_cols_array_2d(),
+            transformation: trans_mat,
         };
 
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -151,16 +159,20 @@ impl CanvasPipeline {
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
+            contents: bytemuck::cast_slice(&texture.vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
+
+        let bounds = bounds.clone();
 
         Self {
             pipeline: render_pipeline,
             diffuse_bind_group,
             uniform_bind_group,
             vertex_buffer,
+            uniform_buffer,
             texture,
+            bounds,
         }
     }
 
@@ -172,6 +184,14 @@ impl CanvasPipeline {
         canvas: &Arc<RwLock<Canvas>>,
     ) {
         self.texture.update(queue, canvas);
+
+        let canvas = canvas.write().unwrap();
+        let offset = std::mem::size_of::<[[f32; 4]; 4]>();
+        queue.write_buffer(
+            &self.uniform_buffer,
+            offset as u64,
+            bytemuck::bytes_of(&canvas.trans_matrix()),
+        );
     }
 
     pub fn render(
@@ -180,7 +200,7 @@ impl CanvasPipeline {
         target: &wgpu::TextureView,
         clip_bounds: &iced::Rectangle<u32>,
     ) {
-        let num_vertices = VERTICES.len() as u32;
+        let num_vertices = self.texture.vertices.len() as u32;
 
         {
             #[allow(unused_mut)]
@@ -216,70 +236,9 @@ impl CanvasPipeline {
     }
 }
 
-/* Vertex Stuff */
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct Vertex {
-    position: [f32; 2],
-    tex_coords: [f32; 2],
-}
-
-impl Vertex {
-    fn desc() -> wgpu::VertexBufferLayout<'static> {
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x2,
-                },
-                wgpu::VertexAttribute {
-                    offset: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
-                    shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x2,
-                },
-            ],
-        }
-    }
-}
-
-const VERTICES: &[Vertex] = &[
-    Vertex {
-        // Top Right
-        position: [200.0, 0.0], // 200, 0.0
-        tex_coords: [1.0, 0.0],
-    },
-    Vertex {
-        // Top Left
-        position: [0.0, 0.0], // 0.0, 0.0
-        tex_coords: [0.0, 0.0],
-    },
-    Vertex {
-        // Bottom Left
-        position: [0.0, 200.0], // 0.0, 200
-        tex_coords: [0.0, 1.0],
-    },
-    Vertex {
-        // Top Right
-        position: [200.0, 0.0], // 200, 0.0
-        tex_coords: [1.0, 0.0],
-    },
-    Vertex {
-        // Bottom Left
-        position: [0.0, 200.0], // 0.0, 200
-        tex_coords: [0.0, 1.0],
-    },
-    Vertex {
-        // Bottom Right
-        position: [200.0, 200.0], // 200, 200
-        tex_coords: [1.0, 1.0],
-    },
-];
-
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Uniforms {
     projection: [[f32; 4]; 4],
+    transformation: [[f32; 4]; 4],
 }

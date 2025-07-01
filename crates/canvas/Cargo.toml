@@ -10,3 +10,4 @@ path = "src/canvas.rs"
 [dependencies]
 tokio = "1.45.1"
 wgpu = "25.0.2"
+glam = "0.30.4"
