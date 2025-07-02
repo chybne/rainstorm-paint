@@ -67,7 +67,9 @@ impl Rainstorm {
     }
 
     pub fn run() -> Result {
-        iced::application("my first app", Rainstorm::update, Rainstorm::view).run()
+        iced::application(Rainstorm::default, Rainstorm::update, Rainstorm::view)
+            .title("Rainstorm Paint")
+            .run()
     }
 }
 

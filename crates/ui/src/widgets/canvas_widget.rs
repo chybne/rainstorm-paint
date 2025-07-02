@@ -5,8 +5,8 @@ use canvas_pipeline::CanvasPipeline;
 
 use iced::advanced::{Widget, layout::Node, renderer};
 use iced::border::radius;
-use iced::widget::shader::{self, wgpu};
-use iced::{self, Border, Color, Element, Length, Size};
+use iced::widget::{Action, shader};
+use iced::{self, Border, Color, Element, Length, Size, wgpu};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
@@ -25,7 +25,7 @@ impl CanvasWidget {
 /* Bare bones basics for now */
 impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for CanvasWidget
 where
-    Renderer: renderer::Renderer + iced_core::text::Renderer,
+    Renderer: renderer::Renderer,
 {
     fn size(&self) -> Size<Length> {
         Size::new(Length::Fill, Length::Fill)
@@ -58,6 +58,7 @@ where
                     ..Default::default()
                 },
                 shadow: Default::default(),
+                snap: true,
             },
             Color::BLACK,
         );
@@ -66,7 +67,7 @@ where
 
 impl<'a, Message, Theme, Renderer> From<CanvasWidget> for Element<'a, Message, Theme, Renderer>
 where
-    Renderer: renderer::Renderer + iced_core::text::Renderer,
+    Renderer: renderer::Renderer,
 {
     fn from(value: CanvasWidget) -> Self {
         Self::new(value)
@@ -97,7 +98,7 @@ impl<Message> shader::Program<Message> for CanvasWidget {
     fn draw(
         &self,
         _state: &Self::State,
-        _cursor: iced_core::mouse::Cursor,
+        _cursor: iced::mouse::Cursor,
         _bounds: iced::Rectangle,
     ) -> Self::Primitive {
         CanvasPrimitive::new(self.canvas.clone(), self.canvas_id)
@@ -105,13 +106,12 @@ impl<Message> shader::Program<Message> for CanvasWidget {
     fn update(
         &self,
         state: &mut Self::State,
-        event: iced::widget::shader::Event,
+        event: &iced::Event,
         bounds: iced::Rectangle,
-        cursor: iced_core::mouse::Cursor,
-        _shell: &mut iced_core::Shell<'_, Message>,
-    ) -> (iced_core::event::Status, Option<Message>) {
+        cursor: iced::mouse::Cursor,
+    ) -> Option<iced::widget::Action<Message>> {
+        use iced::Event;
         use iced::mouse;
-        use iced::widget::shader::Event;
 
         let canvas = self.canvas.read().unwrap();
         /* Not the actual canvas position, canvas width and widget with are not linked */
@@ -137,6 +137,7 @@ impl<Message> shader::Program<Message> for CanvasWidget {
                 }
             }
             mouse::Cursor::Unavailable => None,
+            mouse::Cursor::Levitating(_) => None,
         };
         drop(canvas);
 
@@ -149,12 +150,12 @@ impl<Message> shader::Program<Message> for CanvasWidget {
                     let mut canvas_mut = self.canvas.write().unwrap();
                     canvas_mut.draw_pixel(position.x, position.y);
                 }
-                (iced::event::Status::Captured, None)
+                Some(Action::request_redraw())
             }
             Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
                 // println!("mouse is released");
                 state.set_is_painting(false);
-                (iced::event::Status::Captured, None)
+                Some(Action::request_redraw())
             }
             Event::Mouse(mouse::Event::CursorMoved { position: _ }) if state.is_painting => {
                 // println!("mouse moved to {position:?}");
@@ -162,9 +163,9 @@ impl<Message> shader::Program<Message> for CanvasWidget {
                     let mut canvas_mut = self.canvas.write().unwrap();
                     canvas_mut.draw_pixel(position.x, position.y);
                 }
-                (iced::event::Status::Captured, None)
+                Some(Action::request_redraw())
             }
-            _ => (iced::event::Status::Ignored, None),
+            _ => None,
         }
     }
 }

@@ -1,6 +1,6 @@
 use super::Vertex;
 use canvas::Canvas;
-use iced::widget::shader::wgpu;
+use iced::wgpu;
 use std::sync::{Arc, RwLock};
 
 pub struct CanvasTexture {
@@ -26,7 +26,7 @@ impl CanvasTexture {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: wgpu::TextureFormat::Rgba8Unorm,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             label: Some("Canvas rendering"),
             view_formats: &[],
@@ -93,14 +93,14 @@ impl CanvasTexture {
         let canvas = canvas.read().unwrap();
 
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &canvas.pixels().as_slice(),
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4 * canvas.width() as u32),
                 rows_per_image: Some(canvas.height() as u32),

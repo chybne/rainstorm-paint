@@ -9,8 +9,11 @@ path = "src/ui.rs"
 
 [dependencies]
 canvas = { workspace = true }
-iced = { version = "0.13.1", features = ["default", "advanced", "image"] }
-iced_wgpu = "0.13.1"
-iced_core = "0.13.2"
+iced = { version = "0.14.0-dev", features = [
+    "default",
+    "advanced",
+    "image",
+    "debug",
+] }
 bytemuck = { version = "1.16", features = ["derive"] }
 glam = "0.30.4"
