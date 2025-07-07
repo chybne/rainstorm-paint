@@ -110,6 +110,7 @@ impl<Message> shader::Program<Message> for CanvasWidget {
         bounds: iced::Rectangle,
         cursor: iced::mouse::Cursor,
     ) -> Option<iced::widget::Action<Message>> {
+        println!("{event:?}");
         use iced::Event;
         use iced::mouse;
 

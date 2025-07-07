@@ -1,6 +1,12 @@
 [workspace]
 resolver = "3"
-members = ["crates/canvas", "crates/rainstorm", "crates/ui"]
+members = [
+    "crates/canvas",
+    "crates/input",
+    "crates/rainstorm",
+    "crates/ui",
+    "crates/input",
+]
 
 [workspace.dependencies]
 ui = { path = "crates/ui" }

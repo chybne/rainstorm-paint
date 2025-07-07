@@ -59,7 +59,7 @@ impl CanvasScreen {
                 self.canvases.push(Arc::new(RwLock::new(canvas)));
                 Action::Nothing
             }
-        }
+        } 
     }
 
     pub fn view(&self) -> Element<Message> {
