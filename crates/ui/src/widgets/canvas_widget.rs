@@ -110,7 +110,7 @@ impl<Message> shader::Program<Message> for CanvasWidget {
         bounds: iced::Rectangle,
         cursor: iced::mouse::Cursor,
     ) -> Option<iced::widget::Action<Message>> {
-        println!("{event:?}");
+        // println!("{event:?}");
         use iced::Event;
         use iced::mouse;
 
@@ -165,6 +165,10 @@ impl<Message> shader::Program<Message> for CanvasWidget {
                     canvas_mut.draw_pixel(position.x, position.y);
                 }
                 Some(Action::request_redraw())
+            }
+            Event::Mouse(mouse::Event::WheelScrolled { delta }) => {
+                println!("{delta:?}");
+                None
             }
             _ => None,
         }

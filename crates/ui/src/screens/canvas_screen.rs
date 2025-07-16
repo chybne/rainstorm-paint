@@ -4,23 +4,19 @@ use iced::widget::{Shader, button, column, row, slider};
 use iced::{Element, Task};
 use std::sync::{Arc, RwLock};
 
+use crate::{Action, Message, Screen};
+
 #[derive(Debug)]
-pub enum Message {
+pub enum ScreenMessage {
     Ui(UiMessage),
     CanvasLoaded(canvas::Canvas),
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum UiMessage {
+pub enum UiMessage {
     ChangedZoom(f32),
     ChangeScreen,
     LoadCanvas,
-}
-
-pub enum Action {
-    ChangeScreen,
-    Nothing,
-    Task(Task<Message>),
 }
 
 #[derive(Debug)]
@@ -38,31 +34,38 @@ impl Default for CanvasScreen {
     }
 }
 
-impl CanvasScreen {
-    pub fn update(&mut self, message: Message) -> Action {
-        match message {
-            Message::Ui(ui_message) => match ui_message {
-                UiMessage::ChangedZoom(zoom) => {
-                    self.zoom = zoom;
-                    for canvas in self.canvases.iter() {
-                        canvas.write().unwrap().scale_matrix(self.zoom);
+impl Screen for CanvasScreen {
+    fn update(&mut self, message: Message) -> Action {
+        if let Message::CanvasScreen(message) = message {
+            match message {
+                ScreenMessage::Ui(ui_message) => match ui_message {
+                    UiMessage::ChangedZoom(zoom) => {
+                        self.zoom = zoom;
+                        for canvas in self.canvases.iter() {
+                            canvas.write().unwrap().scale_matrix(self.zoom);
+                        }
+                        Action::None
                     }
-                    Action::Nothing
-                }
-                UiMessage::ChangeScreen => Action::ChangeScreen,
-                UiMessage::LoadCanvas => {
-                    Action::Task(Task::perform(Canvas::new(), Message::CanvasLoaded))
-                }
-            },
+                    UiMessage::ChangeScreen => {
+                        Action::ChangeScreen(Box::new(crate::HomeScreen::default()))
+                    }
+                    UiMessage::LoadCanvas => Action::Task(
+                        Task::perform(Canvas::new(), ScreenMessage::CanvasLoaded)
+                            .map(crate::Message::CanvasScreen),
+                    ),
+                },
 
-            Message::CanvasLoaded(canvas) => {
-                self.canvases.push(Arc::new(RwLock::new(canvas)));
-                Action::Nothing
+                ScreenMessage::CanvasLoaded(canvas) => {
+                    self.canvases.push(Arc::new(RwLock::new(canvas)));
+                    Action::None
+                }
             }
-        } 
+        } else {
+            Action::None
+        }
     }
 
-    pub fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<Message> {
         let slider = slider(0.3..=5.0, self.zoom, UiMessage::ChangedZoom)
             .step(0.05)
             .width(100);
@@ -82,6 +85,6 @@ impl CanvasScreen {
 
         let content: Element<'_, UiMessage> = content.into();
 
-        content.map(Message::Ui)
+        content.map(ScreenMessage::Ui).map(Message::CanvasScreen)
     }
 }
