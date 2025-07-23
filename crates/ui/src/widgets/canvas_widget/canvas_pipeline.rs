@@ -69,7 +69,7 @@ impl CanvasPipeline {
 
         /* Aspect Ratio and Tranformation */
         let ortho = glam::Mat4::orthographic_lh(0.0, bounds.width, bounds.height, 0.0, 0.0, 1.0);
-        let trans_mat = canvas.read().unwrap().trans_matrix();
+        let trans_mat = canvas.read().unwrap().transform_matrix();
 
         let uniforms = Uniforms {
             projection: ortho.to_cols_array_2d(),
@@ -191,7 +191,7 @@ impl CanvasPipeline {
         queue.write_buffer(
             &self.uniform_buffer,
             offset as u64,
-            bytemuck::bytes_of(&canvas.trans_matrix()),
+            bytemuck::bytes_of(&canvas.transform_matrix()),
         );
     }
 

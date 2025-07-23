@@ -3,9 +3,10 @@ use objc2::{
 };
 
 use objc2_app_kit::{NSEvent, NSMagnificationGestureRecognizer, NSView};
-use objc2_foundation::NSRect;
-use std::cell::RefCell;
+use objc2_foundation::{NSPoint, NSRect};
 use tokio::sync::mpsc::Sender;
+
+use crate::TabletEvent;
 
 use super::{GestureEvent, InputEvent};
 
@@ -18,7 +19,6 @@ use super::{GestureEvent, InputEvent};
 #[derive(Debug)]
 pub struct Ivars {
     send: Sender<super::InputEvent>,
-    is_drawing: RefCell<bool>,
 }
 
 define_class!(
@@ -40,9 +40,9 @@ define_class!(
         }
 
         #[unsafe(method(scrollWheel:))]
-        #[cfg(feature = "gesture-pan")]
         fn scroll_wheel(&self, event: &NSEvent) {
-            let scroll = unsafe {(event.deltaX(), event.deltaY())};
+            let scroll = unsafe {(event.scrollingDeltaX(), event.scrollingDeltaY())};
+
             let _ = self.ivars().send.try_send(InputEvent::Gesture(GestureEvent::PanGesture { dx: scroll.0, dy: scroll.1 }));
             unsafe {
                 if let Some(responder) = self.nextResponder() {
@@ -65,7 +65,15 @@ define_class!(
         #[unsafe(method(mouseDragged:))]
         fn mouse_dragged(&self, event: &NSEvent) {
 
-            self.handle_drawing(event);
+            let point: NSPoint = self.convertPoint_fromView(unsafe {event.locationInWindow()}, None);
+            let pressure = unsafe { event.pressure() };
+
+            unsafe {
+                let _tilt_x = event.tilt().x;
+                let _tilt_y = event.tilt().y;
+            }
+
+            let _ = self.ivars().send.try_send(InputEvent::Tablet(TabletEvent::TabletPoint { x: point.x, y: point.y, pressure }));
 
             unsafe {
                 if let Some(responder) = self.nextResponder() {
@@ -76,7 +84,9 @@ define_class!(
 
         #[unsafe(method(mouseMoved:))]
         fn mouse_moved(&self, event: &NSEvent) {
-            self.handle_drawing(event);
+            let point: NSPoint = self.convertPoint_fromView(unsafe {event.locationInWindow()}, None);
+
+            let _ = self.ivars().send.try_send(InputEvent::Tablet(TabletEvent::TabletMoved { x: point.x, y: point.y}));
 
             unsafe {
                 if let Some(responder) = self.nextResponder() {
@@ -88,10 +98,6 @@ define_class!(
 
         #[unsafe(method(tabletProximity:))]
         fn tablet_proximity(&self, event: &NSEvent) {
-            let s = unsafe { event.isEnteringProximity() };
-            println!("is entering proximity: {s:?}");
-            *self.ivars().is_drawing.borrow_mut() = s;
-
             unsafe {
                 if let Some(responder) = self.nextResponder() {
                     responder.tabletProximity(event);
@@ -102,8 +108,6 @@ define_class!(
 
         #[unsafe(method(mouseUp:))]
         fn mouse_released(&self, event: &NSEvent) {
-            println!("released");
-            *self.ivars().is_drawing.borrow_mut() = true;
 
             unsafe {
                 if let Some(responder) = self.nextResponder() {
@@ -112,7 +116,6 @@ define_class!(
             }
         }
 
-        #[cfg(feature = "gesture-magnify")]
         #[unsafe(method(handleMagnify:))]
         fn handle_magnify(&self, recognizer: &NSMagnificationGestureRecognizer) {
             let mag = unsafe {recognizer.magnification()};
@@ -132,10 +135,7 @@ impl InputView {
     ) -> Retained<Self> {
         unsafe {
             // Call super's initWithFrame
-            let this = Self::alloc(mtm).set_ivars(Ivars {
-                send,
-                is_drawing: RefCell::new(false),
-            });
+            let this = Self::alloc(mtm).set_ivars(Ivars { send });
             msg_send![super(this), initWithFrame: frame]
         }
     }
@@ -153,23 +153,6 @@ impl InputView {
 
         unsafe {
             self.addGestureRecognizer(&mag_recognizer);
-        }
-    }
-
-    fn handle_drawing(&self, event: &NSEvent) {
-        if *self.ivars().is_drawing.borrow() {
-            unsafe {
-                let position = event.locationInWindow(); // NSPoint
-                let position = self.convertPoint_fromView(position, None);
-                let pressure = event.pressure(); // CGFloat (0.0 - 1.0)
-
-                let tilt_x = event.tilt().x;
-                let tilt_y = event.tilt().y;
-
-                println!(
-                    "position {position:?} pressure {pressure:?} tiltx {tilt_x:?} tilty {tilt_y:?}"
-                );
-            }
         }
     }
 }

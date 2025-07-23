@@ -31,9 +31,6 @@ pub fn start_tracking_gestures(ns_view: *mut c_void, send: Sender<InputEvent>) {
     view.install_recognizers(mtm);
 
     unsafe {
-        let d = view.isFlipped();
-        println!("frssfd {d:?}");
-
         ns_view.addSubview(view.as_super());
     }
 }
@@ -46,14 +43,15 @@ pub enum InputEvent {
 
 #[derive(Debug)]
 pub enum TabletEvent {
-    Point { x: f64, y: f64, z: f64 },
+    TabletDown,
+    TabletReleased,
+    TabletMoved { x: f64, y: f64 },
+    TabletPoint { x: f64, y: f64, pressure: f32 },
 }
 
 #[derive(Debug)]
 pub enum GestureEvent {
-    #[cfg(feature = "gesture-magnify")]
     MagnifyGesture { scale: f64 },
 
-    #[cfg(feature = "gesture-pan")]
     PanGesture { dx: f64, dy: f64 },
 }

@@ -18,6 +18,7 @@ pub enum Message {
     HomeScreen(home_screen::ScreenMessage),
     InitializeInput(iced::window::Id),
     InputSend(Sender<InputEvent>),
+    Input(InputEvent),
     HandleLoaded,
 }
 
@@ -104,7 +105,8 @@ impl Rainstorm {
                     break;
                 };
 
-                println!("{input:?}");
+                let _ = output.send(Message::Input(input)).await;
+                // println!("subscription {input:?}");
             }
         })
     }

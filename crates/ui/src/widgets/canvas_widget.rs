@@ -18,7 +18,8 @@ pub struct CanvasWidget {
 
 impl CanvasWidget {
     pub fn new(canvas: Arc<RwLock<Canvas>>, canvas_id: u32) -> Self {
-        Self { canvas, canvas_id }
+        let x = Self { canvas, canvas_id };
+        x
     }
 }
 
@@ -166,9 +167,10 @@ impl<Message> shader::Program<Message> for CanvasWidget {
                 }
                 Some(Action::request_redraw())
             }
-            Event::Mouse(mouse::Event::WheelScrolled { delta }) => {
-                println!("{delta:?}");
-                None
+            Event::Window(_) => {
+                let mut canvas = self.canvas.write().unwrap();
+                canvas.set_bounds(bounds.x, bounds.y, bounds.width, bounds.height);
+                Some(Action::request_redraw())
             }
             _ => None,
         }

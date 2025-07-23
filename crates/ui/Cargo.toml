@@ -9,11 +9,7 @@ path = "src/ui.rs"
 
 [dependencies]
 canvas = { workspace = true }
-input = { path = "../input", features = [
-    "tablet",
-    "gesture-magnify",
-    "gesture-pan",
-] }
+input = { workspace = true }
 iced = { version = "0.14.0-dev", features = [
     "default",
     "advanced",
