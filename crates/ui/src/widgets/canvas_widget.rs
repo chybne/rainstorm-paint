@@ -3,10 +3,8 @@ mod canvas_pipeline;
 use canvas::Canvas;
 use canvas_pipeline::CanvasPipeline;
 
-use iced::advanced::{Widget, layout::Node, renderer};
-use iced::border::radius;
-use iced::widget::{Action, shader};
-use iced::{self, Border, Color, Element, Length, Size, wgpu};
+use iced::widget::{Action, Shader, column, shader};
+use iced::{self, Element, Length, wgpu};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
@@ -17,61 +15,17 @@ pub struct CanvasWidget {
 }
 
 impl CanvasWidget {
-    pub fn new(canvas: Arc<RwLock<Canvas>>, canvas_id: u32) -> Self {
-        let x = Self { canvas, canvas_id };
-        x
-    }
-}
+    pub fn new<'a, Message>(canvas: Arc<RwLock<Canvas>>, canvas_id: u32) -> Element<'a, Message>
+    where
+        Message: 'a,
+    {
+        let canvas_view = Shader::new(Self { canvas, canvas_id })
+            .width(Length::Fill)
+            .height(Length::Fill);
 
-/* Bare bones basics for now */
-impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for CanvasWidget
-where
-    Renderer: renderer::Renderer,
-{
-    fn size(&self) -> Size<Length> {
-        Size::new(Length::Fill, Length::Fill)
-    }
+        let element: Element<Message> = column![canvas_view,].into();
 
-    fn layout(
-        &self,
-        _tree: &mut iced::advanced::widget::Tree,
-        _renderer: &Renderer,
-        _limits: &iced::advanced::layout::Limits,
-    ) -> Node {
-        Node::new(Size::new(30.0, 30.0))
-    }
-
-    fn draw(
-        &self,
-        _tree: &iced::advanced::widget::Tree,
-        renderer: &mut Renderer,
-        _theme: &Theme,
-        _style: &iced::advanced::renderer::Style,
-        layout: iced::advanced::Layout<'_>,
-        _cursor: iced::advanced::mouse::Cursor,
-        _viewport: &iced::Rectangle,
-    ) {
-        renderer.fill_quad(
-            renderer::Quad {
-                bounds: layout.bounds(),
-                border: Border {
-                    radius: radius(30),
-                    ..Default::default()
-                },
-                shadow: Default::default(),
-                snap: true,
-            },
-            Color::BLACK,
-        );
-    }
-}
-
-impl<'a, Message, Theme, Renderer> From<CanvasWidget> for Element<'a, Message, Theme, Renderer>
-where
-    Renderer: renderer::Renderer,
-{
-    fn from(value: CanvasWidget) -> Self {
-        Self::new(value)
+        element
     }
 }
 
@@ -115,7 +69,14 @@ impl<Message> shader::Program<Message> for CanvasWidget {
         use iced::Event;
         use iced::mouse;
 
-        let canvas = self.canvas.read().unwrap();
+        let canvas = match self.canvas.read() {
+            Ok(val) => val,
+            Err(e) => {
+                eprintln!("canvas read error: {e}");
+                return None;
+            }
+        };
+
         /* Not the actual canvas position, canvas width and widget with are not linked */
         let canvas_position: Option<CanvasPosition> = match cursor {
             mouse::Cursor::Available(point) => {

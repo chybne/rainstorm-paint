@@ -6,12 +6,14 @@ members = [
     "crates/rainstorm",
     "crates/ui",
     "crates/input",
+    "crates/foundation",
 ]
 
 [workspace.dependencies]
 ui = { path = "crates/ui" }
 canvas = { path = "crates/canvas" }
 input = { path = "crates/input" }
+foundation = { path = "crates/foundation" }
 
 [patch.crates-io]
 iced = { git = "https://github.com/iced-rs/iced", rev = "283d0e74a8050ea625da25e0b9180b65f11d1843" }

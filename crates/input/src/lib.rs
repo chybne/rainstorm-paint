@@ -52,6 +52,6 @@ pub enum TabletEvent {
 #[derive(Debug)]
 pub enum GestureEvent {
     MagnifyGesture { scale: f64 },
-
     PanGesture { dx: f64, dy: f64 },
+    RotationGesture { rotation: f64 },
 }

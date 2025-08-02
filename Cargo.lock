@@ -578,7 +578,8 @@ dependencies = [
 name = "canvas"
 version = "0.1.0"
 dependencies = [
- "glam 0.30.4",
+ "foundation",
+ "glam 0.30.5",
  "tokio",
  "wgpu 25.0.2",
 ]
@@ -1213,6 +1214,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "foundation"
+version = "0.1.0"
+dependencies = [
+ "glam 0.30.5",
+]
+
+[[package]]
 name = "futures"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1383,9 +1391,9 @@ checksum = "151665d9be52f9bb40fc7966565d39666f2d1e69233571b71b87791c7e0528b3"
 
 [[package]]
 name = "glam"
-version = "0.30.4"
+version = "0.30.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50a99dbe56b72736564cfa4b85bf9a33079f16ae8b74983ab06af3b1a3696b11"
+checksum = "f2d1aab06663bdce00d6ca5e5ed586ec8d18033a771906c993a1e3755b368d85"
 
 [[package]]
 name = "gloo-timers"
@@ -3781,17 +3789,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-stream"
-version = "0.1.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eca58d7bba4a75707817a2c44174253f9236b2d5fbd055602e9d5c07c139a047"
-dependencies = [
- "futures-core",
- "pin-project-lite",
- "tokio",
-]
-
-[[package]]
 name = "toml"
 version = "0.8.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3891,11 +3888,11 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "canvas",
- "glam 0.30.4",
+ "foundation",
+ "glam 0.30.5",
  "iced",
  "input",
  "tokio",
- "tokio-stream",
 ]
 
 [[package]]

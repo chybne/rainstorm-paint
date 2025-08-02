@@ -1,7 +1,8 @@
 use crate::widgets::CanvasWidget;
 use canvas::{self, Canvas};
+use foundation::geometry;
 use iced::Element;
-use iced::widget::{Shader, button, column, mouse_area, row, slider};
+use iced::widget::{button, column, mouse_area, row, slider};
 use input::{GestureEvent, InputEvent, TabletEvent};
 use std::sync::{Arc, RwLock};
 
@@ -18,7 +19,7 @@ pub enum ScreenMessage {
 #[derive(Debug)]
 pub struct CanvasScreen {
     zoom: f32,
-    mouse_pos: canvas::Point,
+    mouse_pos: geometry::Point,
     is_canvas_focused: bool,
     canvases: Vec<Arc<RwLock<canvas::Canvas>>>,
 }
@@ -27,7 +28,7 @@ impl Default for CanvasScreen {
     fn default() -> Self {
         Self {
             zoom: 1.0,
-            mouse_pos: canvas::Point::default(),
+            mouse_pos: geometry::Point::default(),
             is_canvas_focused: false,
             canvases: vec![],
         }
@@ -40,7 +41,6 @@ impl Screen for CanvasScreen {
             match message {
                 ScreenMessage::CanvasFocused(focus) => {
                     self.is_canvas_focused = focus;
-                    println!("is canvas focused? {focus:?}");
                     return Action::None;
                 }
 
@@ -86,9 +86,7 @@ impl Screen for CanvasScreen {
         let mut content = column![].push(buttons);
 
         for (i, canvas) in self.canvases.iter().enumerate() {
-            let shader = Shader::new(CanvasWidget::new(canvas.clone(), i as u32))
-                .width(800)
-                .height(500);
+            let shader = CanvasWidget::new(canvas.clone(), i as u32);
 
             let shader = mouse_area(shader)
                 .on_enter(ScreenMessage::CanvasFocused(true))
@@ -106,7 +104,7 @@ impl CanvasScreen {
     fn handle_tablet_input(&mut self, input: TabletEvent) -> Action {
         match input {
             TabletEvent::TabletPoint { x, y, pressure } => {
-                let point = canvas::Point {
+                let point = geometry::Point {
                     x: x as f32,
                     y: y as f32,
                 };
@@ -130,7 +128,7 @@ impl CanvasScreen {
                 Action::None
             }
             TabletEvent::TabletMoved { x, y } => {
-                let point = canvas::Point {
+                let point = geometry::Point {
                     x: x as f32,
                     y: y as f32,
                 };
@@ -150,12 +148,15 @@ impl CanvasScreen {
                 }
                 // i know these are some magic number
                 // will change later
-                let delta = 1.0 + scale as f32 * 0.1;
+                let delta = 1.0 + scale as f32;
 
                 for canvas in self.canvases.iter() {
                     let mut canvas = canvas.write().unwrap();
-                    canvas.zoom_relative_to_point(delta, self.mouse_pos);
-                    self.zoom = canvas.zoom();
+                    let mouse_pos = canvas.convert_to_canvas_coords(self.mouse_pos);
+                    if let Some(mouse_pos) = mouse_pos {
+                        canvas.zoom_relative_to_point(delta, mouse_pos);
+                        self.zoom = canvas.zoom();
+                    }
                 }
 
                 Action::None
@@ -166,6 +167,17 @@ impl CanvasScreen {
                     .filter_map(|lock| lock.write().ok())
                     .for_each(|mut canvas| {
                         canvas.apply_offset(dx as f32, dy as f32);
+                    });
+                Action::None
+            }
+            GestureEvent::RotationGesture { rotation: delta } => {
+                self.canvases
+                    .iter()
+                    .filter_map(|lock| lock.write().ok())
+                    .for_each(|mut canvas| {
+                        if let Some(mouse_pos) = canvas.convert_to_canvas_coords(self.mouse_pos) {
+                            canvas.apply_rotation(-delta as f32, mouse_pos);
+                        }
                     });
                 Action::None
             }

@@ -3,11 +3,8 @@ name = "canvas"
 version = "0.1.0"
 edition = "2024"
 
-[lib]
-name = "canvas"
-path = "src/canvas.rs"
-
 [dependencies]
+foundation = { workspace = true }
 tokio = "1.45.1"
 wgpu = "25.0.2"
 glam = "0.30.4"

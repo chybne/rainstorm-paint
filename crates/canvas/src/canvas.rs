@@ -1,55 +1,7 @@
-use std::ops::Sub;
-
+use foundation::geometry::{Point, Rectangle};
 use glam::{self, Vec2, Vec3};
 
-#[derive(Default, Debug, Clone)]
-pub struct Bounds {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
-}
-
-#[derive(Debug, Clone, Copy, Default)]
-pub struct Point {
-    pub x: f32,
-    pub y: f32,
-}
-
-impl Sub for Point {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-        }
-    }
-}
-
-impl From<Point> for Vec2 {
-    fn from(value: Point) -> Self {
-        Vec2::new(value.x, value.y)
-    }
-}
-
-impl From<Vec2> for Point {
-    fn from(value: Vec2) -> Self {
-        Self {
-            x: value.x,
-            y: value.y,
-        }
-    }
-}
-
-impl Bounds {
-    pub fn contains(&self, point: Point) -> bool {
-        self.x <= point.x
-            && point.x < self.x + self.width
-            && self.y <= point.y
-            && point.y < self.y + self.height
-    }
-}
+type Bounds = Rectangle;
 
 #[derive(Debug)]
 pub struct Canvas {
@@ -57,7 +9,8 @@ pub struct Canvas {
     height: usize,
     pixels: Vec<u8>,
     zoom: f32,
-    bounds: Bounds,
+    rotation: f32,
+    bounds: Rectangle,
     offset: Point,
 }
 
@@ -68,12 +21,14 @@ impl Default for Canvas {
 
         let pixels: Vec<u8> = pattern.iter().cycle().take(size).cloned().collect();
         let zoom = 1.0;
+        let rotation = 0.0;
 
         Self {
             width: 500,
             height: 500,
             pixels,
             zoom,
+            rotation,
             bounds: Bounds::default(),
             offset: Point::default(),
         }
@@ -111,16 +66,23 @@ impl Canvas {
 
     pub fn zoom_relative_to_point(&mut self, delta: f32, mouse_pos: Point) {
         let offset: Vec2 = self.offset.into();
+
+        println!("old offset: {offset}");
         let mouse_pos: Vec2 = mouse_pos.into();
-        let world_before: Vec2 = (mouse_pos - offset) / self.zoom();
+        let world_before: Vec2 = (mouse_pos + offset) / self.zoom;
+        println!("world before: {world_before}");
 
         self.zoom *= delta;
+
         /*
          * TODO define a min/max zoom const
          */
         self.zoom = self.zoom.clamp(0.3, 5.0);
 
-        self.offset = (mouse_pos - world_before * self.zoom()).into();
+        self.offset = (world_before * self.zoom - mouse_pos).into();
+
+        let offset: Vec2 = self.offset.into();
+        println!("new offset: {offset}");
     }
 
     pub fn set_zoom_temp(&mut self, zoom: f32) {
@@ -128,8 +90,29 @@ impl Canvas {
     }
 
     pub fn apply_offset(&mut self, dx: f32, dy: f32) {
-        self.offset.x += dx;
-        self.offset.y += dy;
+        self.offset.x -= dx;
+        self.offset.y -= dy;
+
+        // 0.9 is a magic but defines the amount of extra space for viewing
+        let min_offset = Point {
+            x: -0.9 * self.bounds.width,
+            y: -0.9 * self.bounds.height,
+        };
+        let max_offset = Point {
+            x: self.width as f32 * self.zoom - self.bounds.width + self.bounds.width * 0.9,
+            y: self.height as f32 * self.zoom - self.bounds.height + self.bounds.height * 0.9,
+        };
+
+        // let max_offset_y = self.height as f32 * self.zoom - self.bounds.height as f32;
+
+        self.offset.x = self.offset.x.clamp(min_offset.x, max_offset.y);
+        self.offset.y = self.offset.y.clamp(min_offset.y, max_offset.y);
+        // println!("offset x: {} y: {}", self.offset.x, self.offset.y);
+    }
+
+    // rotate from center for now, will change later
+    pub fn apply_rotation(&mut self, delta: f32, mouse_pos: Point) {
+        self.rotation += delta;
     }
 
     pub fn inverse_matrix(&self) -> [[f32; 4]; 4] {
@@ -140,10 +123,16 @@ impl Canvas {
 
     pub fn transform_matrix(&self) -> [[f32; 4]; 4] {
         let translation =
-            glam::Mat4::from_translation(Vec3::new(self.offset.x, self.offset.y, 0.0));
+            glam::Mat4::from_translation(Vec3::new(-self.offset.x, -self.offset.y, 0.0));
         let scale = glam::Mat4::from_scale(Vec3::new(self.zoom, self.zoom, 1.0));
+        let rotation = glam::Mat4::from_rotation_z(self.rotation);
+        let pivot_rotate = glam::Mat4::from_translation(Vec3::new(
+            self.width as f32 / 2.0,
+            self.height as f32 / 2.0,
+            0.0,
+        ));
 
-        (translation * scale).to_cols_array_2d()
+        (translation * scale * pivot_rotate * rotation * pivot_rotate.inverse()).to_cols_array_2d()
     }
 
     pub fn is_within_bounds(&self, point: Point) -> bool {
