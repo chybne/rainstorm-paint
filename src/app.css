@@ -1,0 +1,18 @@
+/* for debugging purposes */
+/** {
+    outline: 1px solid red;
+}*/
+
+:root {
+    --primary: #62a1d9;
+    --secondary: #f285b8;
+    --background: #e5eef3;
+    --background-dark: #a1c1da;
+    --text: #433c73;
+}
+
+body {
+    overflow: hidden;
+    height: 100vh;
+    margin: 0%;
+}
