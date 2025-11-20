@@ -5,8 +5,8 @@ use pipeline::Pipeline;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+fn set_viewport(x: f32, y: f32, width: f32, height: f32, state: tauri::State<Pipeline>) {
+    state.set_viewport(x, y, width, height);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -23,7 +23,7 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![set_viewport])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| match event {

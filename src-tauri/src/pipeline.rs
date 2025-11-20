@@ -1,9 +1,10 @@
-use std::borrow::Cow;
+mod viewport;
 
-use tauri::{
-    async_runtime::{block_on, Mutex},
-    Window,
-};
+use std::borrow::Cow;
+use std::sync::Mutex;
+
+use tauri::{async_runtime::block_on, Window};
+use viewport::Viewport;
 use wgpu::{self, Device, Queue, RenderPipeline, Surface, SurfaceConfiguration};
 
 pub struct Pipeline {
@@ -12,11 +13,13 @@ pub struct Pipeline {
     device: Device,
     queue: Queue,
     config: Mutex<SurfaceConfiguration>,
+    viewport: Mutex<Option<Viewport>>,
 }
 
 impl Pipeline {
     pub fn with_window(window: Window) -> Result<Pipeline, Box<dyn std::error::Error>> {
         let size = window.inner_size()?;
+
         let instance = wgpu::Instance::default();
         let surface = instance.create_surface(window)?;
         let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
@@ -107,11 +110,22 @@ return vec4<f32>(0.380, 0.596, 0.859, 1.0);
             device,
             queue,
             config: Mutex::new(config),
+            viewport: Mutex::new(None),
         })
     }
 
+    pub fn set_viewport(&self, x: f32, y: f32, width: f32, height: f32) {
+        let mut viewport = self.viewport.lock().unwrap();
+        *viewport = Some(Viewport {
+            x,
+            y,
+            width,
+            height,
+        });
+    }
+
     pub fn change_size(&self, width: u32, height: u32) {
-        let mut config = block_on(self.config.lock());
+        let mut config = self.config.lock().unwrap();
         config.width = if width > 0 { width } else { 1 };
         config.height = if height > 0 { height } else { 1 };
 
@@ -150,7 +164,9 @@ return vec4<f32>(0.380, 0.596, 0.859, 1.0);
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            // rpass.setviewport here
+            if let Some(vp) = &*self.viewport.lock().unwrap() {
+                rpass.set_viewport(vp.x, vp.y, vp.width, vp.height, 0f32, 1f32);
+            }
             rpass.set_pipeline(&self.pipeline);
             rpass.draw(0..3, 0..1);
         }

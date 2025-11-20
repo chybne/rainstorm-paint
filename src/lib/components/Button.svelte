@@ -1,6 +1,5 @@
 <!-- Button Component -->
 <script>
-    import { createEventDispatcher } from "svelte";
     export let icon = null;
 </script>
 
