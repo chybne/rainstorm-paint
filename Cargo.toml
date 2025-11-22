@@ -1,0 +1,6 @@
+[workspace]
+resolver = "3"
+members = ["lib/canvas", "src-tauri"]
+
+[workspace.dependencies]
+canvas = { path = "lib/canvas" }
