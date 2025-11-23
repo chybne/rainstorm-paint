@@ -6,10 +6,20 @@ use pipeline::Pipeline;
 use std::sync::Mutex;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-// #[tauri::command]
-// fn set_viewport(x: f32, y: f32, width: f32, height: f32, state: tauri::State<Pipeline>) {
-//     state.set_viewport(x, y, width, height);
-// }
+#[tauri::command]
+fn set_view(
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    state: tauri::State<Mutex<Canvas>>,
+    pipeline: tauri::State<Pipeline>,
+) {
+    let mut canvas = state.lock().unwrap();
+    canvas.set_original_offset(x, y);
+
+    pipeline.change_size(width as u32, height as u32, &canvas);
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -30,7 +40,7 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![set_view])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| match event {
@@ -40,7 +50,9 @@ pub fn run() {
                 ..
             } => {
                 let pipeline = app_handle.state::<Pipeline>();
-                pipeline.change_size(size.width, size.height);
+                let canvas = app_handle.state::<Mutex<Canvas>>();
+                let canvas = canvas.lock().unwrap();
+                pipeline.change_size(size.width, size.height, &canvas);
             }
             RunEvent::MainEventsCleared => {
                 let pipeline = app_handle.state::<Pipeline>();

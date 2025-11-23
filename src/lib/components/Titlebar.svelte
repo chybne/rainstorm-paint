@@ -26,15 +26,14 @@
         padding-left: 80px;
         padding-right: 16px;
 
-        user-select: none; /* Prevent highlighting the title text */
+        /* Prevent highlighting the title text */
+        user-select: none;
+        -webkit-user-select: none;
 
-        /* Optional: separation line */
         border-bottom: 1px solid var(--background-dark);
     }
 
     .title-text {
-        user-select: none;
-        -webkit-user-select: none;
         color: var(--text);
         font-size: 12px;
         font-weight: 500;

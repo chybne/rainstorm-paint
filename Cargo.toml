@@ -4,3 +4,4 @@ members = ["lib/canvas", "src-tauri"]
 
 [workspace.dependencies]
 canvas = { path = "lib/canvas" }
+glam = "0.30.9"

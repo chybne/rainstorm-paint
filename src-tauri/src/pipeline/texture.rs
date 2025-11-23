@@ -207,11 +207,17 @@ impl CanvasTexture {
         );
     }
 
-    pub fn update_uniform(&mut self, queue: &wgpu::Queue, width: f32, height: f32) {
+    pub fn update_uniform(
+        &mut self,
+        queue: &wgpu::Queue,
+        width: f32,
+        height: f32,
+        canvas: &Canvas,
+    ) {
         let ortho = glam::Mat4::orthographic_lh(0.0, width, height, 0.0, 0.0, 1.0);
         let uniforms = Uniforms {
             projection: ortho.to_cols_array_2d(),
-            transformation: glam::Mat4::IDENTITY.to_cols_array_2d(),
+            transformation: canvas.transform_matrix(),
         };
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));

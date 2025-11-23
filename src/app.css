@@ -12,6 +12,9 @@
 }
 
 body {
+    user-select: none;
+    -webkit-user-select: none;
+
     overflow: hidden;
     height: 100vh;
     margin: 0%;

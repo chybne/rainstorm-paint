@@ -203,7 +203,7 @@ fn fs_main() -> @location(0) vec4<f32> {
         *ctexture = Some(texture);
     }
 
-    pub fn change_size(&self, width: u32, height: u32) {
+    pub fn change_size(&self, width: u32, height: u32, canvas: &Canvas) {
         let mut config = self.config.lock().unwrap();
         config.width = if width > 0 { width } else { 1 };
         config.height = if height > 0 { height } else { 1 };
@@ -211,7 +211,7 @@ fn fs_main() -> @location(0) vec4<f32> {
 
         let mut texture = self.texture.lock().unwrap();
         if let Some(c) = &mut *texture {
-            c.update_uniform(&self.queue, width as f32, height as f32);
+            c.update_uniform(&self.queue, width as f32, height as f32, canvas);
         }
     }
 
