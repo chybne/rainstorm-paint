@@ -1,7 +1,6 @@
 use super::vertex::Vertex;
 
 use canvas::Canvas;
-use std::sync::Mutex;
 use wgpu;
 use wgpu::util::DeviceExt;
 
@@ -21,9 +20,7 @@ pub struct CanvasTexture {
 }
 
 impl CanvasTexture {
-    pub fn new(device: &wgpu::Device, canvas: &Mutex<Canvas>, w: f32, h: f32) -> Self {
-        let canvas = canvas.lock().unwrap();
-
+    pub fn new(device: &wgpu::Device, canvas: &Canvas, w: f32, h: f32) -> Self {
         let size = wgpu::Extent3d {
             width: canvas.width() as u32,
             height: canvas.height() as u32,
@@ -187,9 +184,7 @@ impl CanvasTexture {
         }
     }
 
-    pub fn update(&mut self, queue: &wgpu::Queue, canvas: &Mutex<Canvas>) {
-        let canvas = canvas.lock().unwrap();
-
+    pub fn update(&mut self, queue: &wgpu::Queue, canvas: &Canvas) {
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &self.texture,

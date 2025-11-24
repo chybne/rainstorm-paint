@@ -1,6 +1,8 @@
 <!-- Button Component -->
-<script>
-    export let icon = null;
+<script lang="ts">
+    import { Brush } from "@lucide/svelte";
+
+    export let icon = Brush;
 </script>
 
 <button class="btn">

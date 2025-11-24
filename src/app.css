@@ -9,6 +9,9 @@
     --background: #e5eef3;
     --background-dark: #a1c1da;
     --text: #433c73;
+
+    /* system font */
+    --font-system: system-ui, "Noto Sans", "DejaVu Sans", sans-serif;
 }
 
 body {

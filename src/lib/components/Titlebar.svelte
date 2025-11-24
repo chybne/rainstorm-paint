@@ -36,8 +36,8 @@
     .title-text {
         color: var(--text);
         font-size: 12px;
-        font-weight: 500;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 400;
+        font-family: var(--font-system);
         letter-spacing: 0.5px;
     }
 

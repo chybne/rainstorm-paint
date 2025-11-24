@@ -26,7 +26,7 @@
         const resizeObserver = new ResizeObserver(updateRect);
         resizeObserver.observe(element);
 
-        // Optional: track movement (layout shifts)
+        // track movement (layout shifts)
         const mutationObserver = new MutationObserver(updateRect);
         mutationObserver.observe(document.body, {
             attributes: true,

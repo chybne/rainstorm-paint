@@ -128,14 +128,14 @@ fn fs_main() -> @location(0) vec4<f32> {
         })
     }
 
-    pub fn attach_canvas(&self, canvas: &Mutex<Canvas>) {
+    pub fn attach_canvas(&self, canvas: &Canvas) {
         let config = self.config.lock().unwrap();
 
         let texture = CanvasTexture::new(
             &self.device,
-            canvas,
+            &canvas,
             config.width as f32,
-            config.height as f32,
+            config.width as f32,
         );
 
         let shader = self
@@ -203,11 +203,17 @@ fn fs_main() -> @location(0) vec4<f32> {
         *ctexture = Some(texture);
     }
 
-    pub fn change_size(&self, width: u32, height: u32, canvas: &Canvas) {
+    pub fn change_size(&self, width: u32, height: u32, canvas: &Option<Canvas>) {
         let mut config = self.config.lock().unwrap();
         config.width = if width > 0 { width } else { 1 };
         config.height = if height > 0 { height } else { 1 };
         self.surface.configure(&self.device, &config);
+
+        let canvas = if let Some(c) = canvas {
+            c
+        } else {
+            return;
+        };
 
         let mut texture = self.texture.lock().unwrap();
         if let Some(c) = &mut *texture {
@@ -215,11 +221,11 @@ fn fs_main() -> @location(0) vec4<f32> {
         }
     }
 
-    pub fn update(&self, canvas: &Mutex<Canvas>) {
+    pub fn update(&self, canvas: &Canvas) {
         let mut texture = self.texture.lock().unwrap();
 
         if let Some(c) = &mut *texture {
-            c.update(&self.queue, &canvas);
+            c.update(&self.queue, canvas);
         }
     }
 
@@ -251,9 +257,9 @@ fn fs_main() -> @location(0) vec4<f32> {
                         ops: wgpu::Operations {
                             // load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                             load: wgpu::LoadOp::Clear(wgpu::Color {
-                                r: 1.0,
-                                g: 1.0,
-                                b: 1.0,
+                                r: 0.9,
+                                g: 0.9,
+                                b: 0.9,
                                 a: 1.0,
                             }),
                             store: wgpu::StoreOp::Store,
@@ -272,39 +278,6 @@ fn fs_main() -> @location(0) vec4<f32> {
 
             self.queue.submit(Some(encoder.finish()));
             frame.present();
-            return;
         }
-
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        {
-            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    depth_slice: None,
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        // load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 1.0,
-                            g: 1.0,
-                            b: 1.0,
-                            a: 1.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-            rpass.set_pipeline(&pipeline);
-            rpass.draw(0..3, 0..1);
-        }
-
-        self.queue.submit(Some(encoder.finish()));
-        frame.present();
     }
 }
