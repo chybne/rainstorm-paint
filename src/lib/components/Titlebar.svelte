@@ -14,13 +14,11 @@
 
 <style>
     .titlebar {
-        height: 34px; /* Matches the slightly taller Zed/Editor feel */
-        background-color: var(
-            --background
-        ); /* Match your app background or slightly lighter */
+        height: 34px;
+        background-color: var(--background);
         display: flex;
         align-items: center;
-        justify-content: center; /* Centers the title */
+        justify-content: center;
 
         /* CRITICAL: Reserve space for macOS Traffic Lights */
         padding-left: 80px;

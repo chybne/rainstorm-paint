@@ -5,7 +5,7 @@
     export let icon = Brush;
 </script>
 
-<button class="btn">
+<button class="btn" on:click>
     <svelte:component this={icon} size="32" />
 </button>
 

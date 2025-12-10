@@ -53,11 +53,6 @@ fn set_view(
         c.set_original_offset(x, y);
         pipeline.change_size(width as u32, height as u32, canvas);
     }
-
-    // let mut canvas = state.lock().unwrap();
-    // canvas.set_original_offset(x, y);
-
-    // pipeline.change_size(width as u32, height as u32, &canvas);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

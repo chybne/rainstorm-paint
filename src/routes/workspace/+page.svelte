@@ -1,17 +1,12 @@
 <script>
-    import { Brush } from "@lucide/svelte";
     import Canvas from "$lib/components/Canvas.svelte";
-    import Button from "$lib/components/Button.svelte";
+    import Toolbar from "$lib/components/Toolbar.svelte";
 </script>
 
 <main class="container">
-    <div class="toolbar">
-        <div class="tools">
-            <Button icon={Brush} />
-        </div>
-    </div>
+    <div class="toolbar"></div>
     <div class="test-base">
-        <div class="test"></div>
+        <Toolbar />
         <Canvas />
     </div>
     <div class="test2"></div>
@@ -36,11 +31,6 @@
     .test-base {
         flex: 1;
         display: flex;
-    }
-
-    .test {
-        width: 3rem;
-        border: 1px solid red;
     }
 
     .test2 {
