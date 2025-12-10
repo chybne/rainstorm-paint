@@ -200,6 +200,13 @@ impl CanvasTexture {
             },
             self.size,
         );
+
+        let offset = std::mem::size_of::<[[f32; 4]; 4]>();
+        queue.write_buffer(
+            &self.uniform_buffer,
+            offset as u64,
+            bytemuck::cast_slice(&[canvas.transform_matrix()]),
+        );
     }
 
     pub fn update_uniform(
