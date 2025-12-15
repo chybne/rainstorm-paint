@@ -1,5 +1,6 @@
 use canvas::Canvas;
 
+/// The current state of the application, right now it only holds the canvas
 pub struct AppState {
     canvas: Option<Canvas>,
 }

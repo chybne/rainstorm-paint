@@ -1,28 +1,12 @@
 use tauri::{Manager, RunEvent, WindowEvent};
 
 mod appstate;
+mod input;
 mod pipeline;
 use appstate::AppState;
 use canvas::Canvas;
 use pipeline::Pipeline;
 use std::sync::Mutex;
-
-#[tauri::command]
-fn canvas_pan(dx: f32, dy: f32, state: tauri::State<Mutex<AppState>>) {
-    // handle the unwraps my guy >:C
-    let mut state = state.lock().unwrap();
-    if let Some(c) = state.canvas_mut() {
-        c.apply_offset(dx * 2f32, dy * 2f32);
-    }
-}
-
-#[tauri::command]
-fn canvas_zoom(zoom: f32, mouse_x: f32, mouse_y: f32, state: tauri::State<Mutex<AppState>>) {
-    let mut state = state.lock().unwrap();
-    if let Some(c) = state.canvas_mut() {
-        c.zoom_relative_to_point(zoom, mouse_x, mouse_y);
-    }
-}
 
 #[tauri::command]
 fn attach_canvas(
@@ -80,8 +64,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             set_view,
             attach_canvas,
-            canvas_pan,
-            canvas_zoom,
+            input::process_canvas_input,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
