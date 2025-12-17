@@ -14,7 +14,7 @@ pub enum CanvasInput {
     #[serde(rename_all = "camelCase")]
     PanCanvas { offset_x: f32, offset_y: f32 },
 
-    StartStroke {
+    BeginStroke {
         mouse_x: f32,
         mouse_y: f32,
         pressure: f32,
@@ -30,7 +30,7 @@ impl Display for CanvasInput {
             CanvasInput::PanCanvas { offset_x, offset_y } => {
                 write!(f, "PanCanvas(offset_x: {offset_x}, offset_y: {offset_y})")
             }
-            CanvasInput::StartStroke {
+            CanvasInput::BeginStroke {
                 mouse_x,
                 mouse_y,
                 pressure,

@@ -1,8 +1,9 @@
-use canvas::Canvas;
+use canvas::{brush::stroke::StrokeManager, Canvas};
 
 /// The current state of the application, right now it only holds the canvas
 pub struct AppState {
     canvas: Option<Canvas>,
+    stroke_manager: StrokeManager,
 }
 
 impl AppState {
@@ -21,6 +22,9 @@ impl AppState {
 
 impl Default for AppState {
     fn default() -> Self {
-        Self { canvas: None }
+        Self {
+            canvas: None,
+            stroke_manager: StrokeManager::new(),
+        }
     }
 }
