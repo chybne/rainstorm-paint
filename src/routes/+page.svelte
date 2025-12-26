@@ -12,10 +12,10 @@
             error_message = "height and width cannot be zero or lower";
         }
 
-        invoke("attach_canvas", {
-            width: width,
-            height: height,
-        });
+        // invoke("attach_canvas", {
+        //     width: width,
+        //     height: height,
+        // });
 
         goto("/workspace");
         console.log("width: " + width);

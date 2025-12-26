@@ -1,4 +1,4 @@
-use tauri::{Manager, RunEvent, WindowEvent};
+use tauri::{Manager, RunEvent, Window, WindowEvent};
 
 mod appstate;
 mod input;
@@ -6,19 +6,17 @@ mod pipeline;
 use appstate::AppState;
 use canvas::Canvas;
 use pipeline::Pipeline;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+
+use tauri_plugin_canvas::{AppHandleExt, CanvasPluginBuilder};
 
 #[tauri::command]
-fn attach_canvas(
-    width: usize,
-    height: usize,
-    state: tauri::State<Mutex<AppState>>,
-    pipeline: tauri::State<Pipeline>,
-) {
-    let mut state = state.lock().unwrap();
-    let canvas = Canvas::new(width, height);
-    pipeline.attach_canvas(&canvas);
-    state.set_canvas(canvas);
+fn attach_canvas(width: usize, height: usize, state: tauri::State<Mutex<AppState>>) {
+    println!("dsdfjalkdkf");
+    // let mut state = state.lock().unwrap();
+    // let canvas = Canvas::new(width, height);
+    // pipeline.attach_canvas(&canvas);
+    // state.set_canvas(canvas);
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -43,17 +41,25 @@ fn set_view(
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            let main_window = app.get_window("main").unwrap();
+            app.wry_plugin(CanvasPluginBuilder::new(app.handle().to_owned()));
+
+            let canvas = Arc::new(Mutex::new(Canvas::default()));
+
+            app.handle()
+                .start_renderer_for_window("main", canvas.clone())
+                .ok();
+
+            app.manage(canvas);
 
             let state = AppState::default();
             app.manage(Mutex::new(state));
 
-            let pipeline = Pipeline::with_window(main_window)?;
+            // let pipeline = Pipeline::with_window(main_window)?;
 
             // let canvas = Mutex::new(Canvas::default());
             // pipeline.attach_canvas(&canvas);
 
-            app.manage(pipeline);
+            // app.manage(pipeline);
             // app.manage(canvas);
 
             println!("Finished!");
@@ -66,35 +72,37 @@ pub fn run() {
             attach_canvas,
             input::process_canvas_input,
         ])
-        .build(tauri::generate_context!())
-        .expect("error while building tauri application")
-        .run(|app_handle, event| match event {
-            RunEvent::WindowEvent {
-                label: _,
-                event: WindowEvent::Resized(size),
-                ..
-            } => {
-                let pipeline = app_handle.state::<Pipeline>();
-                let state = app_handle.state::<Mutex<AppState>>();
-                let state = state.lock().unwrap();
-                pipeline.change_size(size.width, size.height, state.canvas());
+        .run(tauri::generate_context!())
+        .expect("error while building tauri application");
+    // .run(|app_handle, event| match event {
+    //     RunEvent::WindowEvent {
+    //         label: _,
+    //         event: WindowEvent::Resized(size),
+    //         ..
+    //     } => {
+    //         println!("resized");
+    //         // let pipeline = app_handle.state::<Pipeline>();
+    //         // let state = app_handle.state::<Mutex<AppState>>();
+    //         // let state = state.lock().unwrap();
+    //         // pipeline.change_size(size.width, size.height, state.canvas());
 
-                // let canvas = app_handle.state::<Mutex<Canvas>>();
-                // let canvas = canvas.lock().unwrap();
-                // pipeline.change_size(size.width, size.height, &canvas);
-            }
-            RunEvent::MainEventsCleared => {
-                let pipeline = app_handle.state::<Pipeline>();
-                let state = app_handle.state::<Mutex<AppState>>();
-                let state = state.lock().unwrap();
-                if let Some(c) = state.canvas() {
-                    pipeline.update(c);
-                }
+    //         // let canvas = app_handle.state::<Mutex<Canvas>>();
+    //         // let canvas = canvas.lock().unwrap();
+    //         // pipeline.change_size(size.width, size.height, &canvas);
+    //     }
+    //     RunEvent::MainEventsCleared => {
+    //         println!("hi");
+    //         // let pipeline = app_handle.state::<Pipeline>();
+    //         // let state = app_handle.state::<Mutex<AppState>>();
+    //         // let state = state.lock().unwrap();
+    //         // if let Some(c) = state.canvas() {
+    //         //     pipeline.update(c);
+    //         // }
 
-                // let canvas = app_handle.state::<Mutex<Canvas>>();
-                // pipeline.update(&canvas);
-                pipeline.render();
-            }
-            _ => (),
-        });
+    //         // // let canvas = app_handle.state::<Mutex<Canvas>>();
+    //         // // pipeline.update(&canvas);
+    //         // pipeline.render();
+    //     }
+    //     _ => (),
+    // });
 }

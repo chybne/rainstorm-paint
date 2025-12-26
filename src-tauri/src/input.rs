@@ -2,23 +2,21 @@ pub mod canvas_input;
 
 use canvas::{brush::stroke::StrokeManager, Canvas};
 use canvas_input::CanvasInput;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use crate::appstate::AppState;
 
 #[tauri::command]
-pub fn process_canvas_input(input: CanvasInput, appstate: tauri::State<Mutex<AppState>>) {
-    let mut state = appstate.lock().unwrap_or_else(|poison| poison.into_inner());
-    let Some(canvas) = state.canvas_mut() else {
-        eprintln!("Received {:?} input, but no canvas was provided", input);
-        return;
-    };
+pub fn process_canvas_input(input: CanvasInput, canvas: tauri::State<Arc<Mutex<Canvas>>>) {
+    let mut canvas = canvas.lock().unwrap();
 
     println!("Received {input} input");
 
     match input {
-        CanvasInput::ZoomCanvas { zoom } => handle_zoom(zoom, canvas),
-        CanvasInput::PanCanvas { offset_x, offset_y } => handle_pan(offset_x, offset_y, canvas),
+        CanvasInput::ZoomCanvas { zoom } => handle_zoom(zoom, &mut canvas),
+        CanvasInput::PanCanvas { offset_x, offset_y } => {
+            handle_pan(offset_x, offset_y, &mut canvas)
+        }
         CanvasInput::BeginStroke {
             mouse_x,
             mouse_y,
