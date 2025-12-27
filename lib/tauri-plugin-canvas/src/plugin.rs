@@ -11,6 +11,7 @@ use tauri::{AppHandle, Manager};
 use tauri_runtime::UserEvent;
 use tauri_runtime_wry::tao::event::Event;
 use tauri_runtime_wry::tao::event::WindowEvent as TaoWindowEvent;
+use tauri_runtime_wry::tao::event_loop::{EventLoopProxy, EventLoopWindowTarget};
 use tauri_runtime_wry::{Message, Plugin, PluginBuilder};
 
 type CanvasWindowMap = Arc<Mutex<HashMap<String, CanvasWindow>>>;
@@ -28,10 +29,10 @@ impl Builder {
 impl<T: UserEvent> PluginBuilder<T> for Builder {
     type Plugin = CanvasRendererPlugin<T>;
 
-    fn build(self, _: tauri_runtime_wry::Context<T>) -> Self::Plugin {
+    fn build(self, context: tauri_runtime_wry::Context<T>) -> Self::Plugin {
         let window_map: CanvasWindowMap = Arc::new(Mutex::new(HashMap::new()));
         self.app.manage(window_map.clone());
-        CanvasRendererPlugin::new(window_map)
+        CanvasRendererPlugin::new(window_map, context)
     }
 }
 
@@ -41,7 +42,7 @@ pub struct CanvasRendererPlugin<T: UserEvent> {
 }
 
 impl<T: UserEvent> CanvasRendererPlugin<T> {
-    fn new(windows: CanvasWindowMap) -> Self {
+    fn new(windows: CanvasWindowMap, context: tauri_runtime_wry::Context<T>) -> Self {
         Self {
             windows,
             _phantom: PhantomData,
@@ -53,10 +54,8 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
     fn on_event(
         &mut self,
         event: &Event<tauri_runtime_wry::Message<T>>,
-        _event_loop: &tauri_runtime_wry::tao::event_loop::EventLoopWindowTarget<
-            tauri_runtime_wry::Message<T>,
-        >,
-        proxy: &tauri_runtime_wry::tao::event_loop::EventLoopProxy<tauri_runtime_wry::Message<T>>,
+        _event_loop: &EventLoopWindowTarget<tauri_runtime_wry::Message<T>>,
+        proxy: &EventLoopProxy<tauri_runtime_wry::Message<T>>,
         _control_flow: &mut tauri_runtime_wry::tao::event_loop::ControlFlow,
         context: tauri_runtime_wry::EventLoopIterationContext<'_, T>,
         _web_context: &tauri_runtime_wry::WebContextStore,
@@ -70,11 +69,15 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
                     if let Some(canvas_win) = windows.get_mut(&label) {
                         match event {
                             TaoWindowEvent::Resized(size) => {
-                                let canvas = canvas_win.canvas.lock().unwrap();
-                                canvas_win
-                                    .renderer
-                                    .change_size(size.width, size.height, &canvas);
-                                return false;
+                                if let Some(canvas) = &canvas_win.canvas {
+                                    let canvas = canvas.lock().unwrap();
+                                    canvas_win.renderer.change_size(
+                                        size.width,
+                                        size.height,
+                                        &canvas,
+                                    );
+                                    return false;
+                                }
                             }
                             _ => {
                                 let consumed = false;
@@ -98,30 +101,38 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
                     }
                 }
             }
-            Event::RedrawRequested(window_id) => {
-                if let Some(label) = get_label_from_tao_id(window_id, &context) {
-                    let mut windows = self.windows.lock().unwrap();
-                    if let Some(canvas_win) = windows.get_mut(&label) {
-                        let canvas = canvas_win.canvas.lock().unwrap();
-                        canvas_win.renderer.update(&*canvas);
+            Event::RedrawRequested(window_id) => 'a: {
+                let Some(label) = get_label_from_tao_id(window_id, &context) else {
+                    break 'a;
+                };
 
-                        canvas_win.renderer.render();
+                let mut windows = self.windows.lock().unwrap();
 
-                        let win_id = get_id_from_tao_id(window_id, &context);
+                let Some(canvas_win) = windows.get_mut(&label) else {
+                    break 'a;
+                };
 
-                        if let Some(id) = win_id {
-                            proxy
-                                .send_event(Message::Window(
-                                    id,
-                                    tauri_runtime_wry::WindowMessage::RequestRedraw,
-                                ))
-                                .ok();
-                        }
+                if let Some(canvas) = &canvas_win.canvas {
+                    let canvas = canvas.lock().unwrap();
+                    canvas_win.renderer.update(&*canvas);
+                    canvas_win.renderer.render();
+                };
+
+                #[cfg(target_os = "windows")]
+                {
+                    let win_id = get_id_from_tao_id(window_id, &context);
+
+                    if let Some(id) = win_id {
+                        proxy
+                            .send_event(Message::Window(
+                                id,
+                                tauri_runtime_wry::WindowMessage::RequestRedraw,
+                            ))
+                            .ok();
                     }
                 }
             }
-
-            Event::MainEventsCleared => {}
+            Event::UserEvent(message) => {}
             &_ => {}
         }
 
@@ -130,15 +141,19 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
 }
 
 struct CanvasWindow {
-    canvas: Arc<Mutex<Canvas>>,
+    canvas: Option<Arc<Mutex<Canvas>>>,
     renderer: RenderState,
 }
 
 pub trait AppHandleExt {
-    fn start_renderer_for_window(&self, label: &str, canvas: Arc<Mutex<Canvas>>) -> Result<()>;
+    fn start_renderer_for_window(&self, label: &str) -> Result<()>;
+
+    fn attach_canvas_for_window(&self, label: &str, canvas: Arc<Mutex<Canvas>>) -> Result<()>;
+
+    fn send_redraw_request_for_window(&self, label: &str) -> Result<()>;
 }
 impl AppHandleExt for AppHandle {
-    fn start_renderer_for_window(&self, label: &str, canvas: Arc<Mutex<Canvas>>) -> Result<()> {
+    fn start_renderer_for_window(&self, label: &str) -> Result<()> {
         let canvas_windows = self
             .try_state::<CanvasWindowMap>()
             .ok_or(Error::msg("TauriPluginCanvasRenderer is not initialized"))?;
@@ -147,13 +162,61 @@ impl AppHandleExt for AppHandle {
             .get_window(label)
             .ok_or(Error::msg("No window found with the provided label"))?;
 
-        let renderer = RenderState::with_window(window)?;
-        let ccanvas = canvas.lock().unwrap();
-        renderer.attach_canvas(&ccanvas);
-        drop(ccanvas);
+        let size = window.inner_size()?;
+        let renderer = RenderState::with_window(window, size.width, size.height)?;
 
         let mut managed_windows = canvas_windows.lock().unwrap();
-        managed_windows.insert(label.to_string(), CanvasWindow { canvas, renderer });
+        managed_windows.insert(
+            label.to_string(),
+            CanvasWindow {
+                canvas: None,
+                renderer,
+            },
+        );
+
+        Ok(())
+    }
+
+    fn attach_canvas_for_window(&self, label: &str, canvas: Arc<Mutex<Canvas>>) -> Result<()> {
+        let canvas_windows = self
+            .try_state::<CanvasWindowMap>()
+            .ok_or(Error::msg("TauriPluginCanvasRenderer is not initialized"))?;
+
+        let wwindow = self
+            .get_window(label)
+            .ok_or(Error::msg("No window found with the provided label"))?;
+
+        let mut managed_windows = canvas_windows.lock().unwrap();
+
+        let Some(window) = managed_windows.get_mut(label) else {
+            return Err(Error::msg("Canvas renderer for window not initialized"));
+        };
+
+        window.canvas = Some(canvas.clone());
+        let canvas = canvas.lock().unwrap();
+        window.renderer.attach_canvas(&canvas);
+
+        Ok(())
+    }
+
+    fn send_redraw_request_for_window(&self, label: &str) -> Result<()> {
+        let canvas_windows = self
+            .try_state::<CanvasWindowMap>()
+            .ok_or(Error::msg("TauriPluginCanvasRenderer is not initialized"))?;
+
+        let mut managed_windows = canvas_windows.lock().unwrap();
+
+        let window = managed_windows
+            .get_mut(&label.to_string())
+            .ok_or(Error::msg("No window with label found"))?;
+
+        let Some(canvas) = &window.canvas else {
+            return Ok(());
+        };
+
+        let ccanvas = canvas.lock().unwrap();
+        window.renderer.update(&ccanvas);
+        window.renderer.render();
 
         Ok(())
     }

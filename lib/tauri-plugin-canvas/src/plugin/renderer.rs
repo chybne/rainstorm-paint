@@ -7,16 +7,20 @@ use anyhow::Result;
 use canvas::Canvas;
 use tauri::{async_runtime::block_on, Window};
 use wgpu::{
-    Device, Instance, Queue, RenderPipeline, RequestAdapterOptions, Surface, SurfaceConfiguration,
+    Device, Queue, RenderPipeline, RequestAdapterOptions, Surface, SurfaceConfiguration,
+    SurfaceTarget,
 };
 
 use crate::plugin::renderer::texture::CanvasTexture;
 
 use vertex::Vertex;
 
+/*
+ * might want to move this to the canvas crate
+*/
+
 pub(crate) struct RenderState {
     surface: Surface<'static>,
-    instance: Instance,
     device: Device,
     queue: Queue,
     config: Mutex<SurfaceConfiguration>,
@@ -26,9 +30,11 @@ pub(crate) struct RenderState {
 }
 
 impl RenderState {
-    pub(crate) fn with_window(window: Window) -> Result<RenderState> {
-        let size = window.inner_size()?;
-
+    pub(crate) fn with_window(
+        window: impl Into<SurfaceTarget<'static>>,
+        width: u32,
+        height: u32,
+    ) -> Result<RenderState> {
         /* We can have a wgpu context that stores the instance
          * so we can have different settings such as using metal
          * or vulcan etc
@@ -69,8 +75,8 @@ impl RenderState {
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: texture_format,
-            width: size.width,
-            height: size.height,
+            width,
+            height,
             present_mode: surface_capabilities.present_modes[0],
             alpha_mode: surface_capabilities.alpha_modes[0],
             view_formats: vec![],
@@ -81,7 +87,6 @@ impl RenderState {
 
         Ok(Self {
             surface,
-            instance,
             device,
             queue,
             config: Mutex::new(config),
@@ -222,8 +227,8 @@ impl RenderState {
                     ops: wgpu::Operations {
                         // load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.9,
-                            g: 0.9,
+                            r: 0.8,
+                            g: 0.8,
                             b: 0.9,
                             a: 1.0,
                         }),

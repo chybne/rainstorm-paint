@@ -34,3 +34,4 @@ wgpu = "27.0.1"
 bytemuck = "1.24.0"
 glam = { workspace = true }
 canvas = { workspace = true }
+tauri-plugin-os = "2"
