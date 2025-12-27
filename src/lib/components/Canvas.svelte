@@ -49,7 +49,7 @@
     function handleMouseMove(event: MouseEvent) {
         mouseX = event.offsetX;
         mouseY = event.offsetY;
-        console.log("mouseX", mouseX, "mouseY", mouseY);
+        // console.log("mouseX", mouseX, "mouseY", mouseY);
     }
 
     function handleWheel(event: WheelEvent) {

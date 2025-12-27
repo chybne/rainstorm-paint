@@ -26,21 +26,3 @@ pub(crate) fn get_label_from_tao_id<T: UserEvent>(
             .map(|ww| ww.label().to_string())
     })
 }
-
-pub(crate) fn get_id_from_label<T: UserEvent>(
-    label: &str,
-    context: &EventLoopIterationContext<'_, T>,
-) -> Option<WindowId> {
-    context
-        .windows
-        .0
-        .borrow()
-        .iter()
-        .find_map(|(id, window_wrapper)| {
-            if window_wrapper.label() == label {
-                Some(*id)
-            } else {
-                None
-            }
-        })
-}

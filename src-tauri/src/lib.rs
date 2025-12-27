@@ -22,19 +22,11 @@ fn attach_canvas(width: usize, height: usize, app: tauri::AppHandle, window: tau
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
-fn set_view(
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
-    state: tauri::State<Mutex<AppState>>,
-    pipeline: tauri::State<Pipeline>,
-) {
+fn set_view(x: f32, y: f32, width: f32, height: f32, state: tauri::State<Mutex<AppState>>) {
     let mut state = state.lock().unwrap();
     let canvas = state.canvas_mut();
     if let Some(c) = canvas {
         c.set_original_offset(x, y);
-        pipeline.change_size(width as u32, height as u32, canvas);
     }
 }
 

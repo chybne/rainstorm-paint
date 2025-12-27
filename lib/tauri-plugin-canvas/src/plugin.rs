@@ -118,7 +118,6 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
                     canvas_win.renderer.render();
                 };
 
-                #[cfg(target_os = "windows")]
                 {
                     let win_id = get_id_from_tao_id(window_id, &context);
 
@@ -132,7 +131,6 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
                     }
                 }
             }
-            Event::UserEvent(message) => {}
             &_ => {}
         }
 

@@ -5,7 +5,7 @@ use std::sync::Mutex;
 
 use anyhow::Result;
 use canvas::Canvas;
-use tauri::{async_runtime::block_on, Window};
+use tauri::async_runtime::block_on;
 use wgpu::{
     Device, Queue, RenderPipeline, RequestAdapterOptions, Surface, SurfaceConfiguration,
     SurfaceTarget,

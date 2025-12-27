@@ -1,15 +1,68 @@
 <script lang="ts">
+    import { platform } from '@tauri-apps/plugin-os';
+    import { getCurrentWindow } from '@tauri-apps/api/window';
+    import { X, Minus, Copy, Square} from "@lucide/svelte"; 
+    import { onDestroy, onMount } from 'svelte';
+
+    const os = platform();
+    const appWindow = getCurrentWindow();
+
     // You can expose a prop to change the title dynamically
     let app_name = "rainstorm-paint";
-    export let title = "Untitled";
+    let { title } = $props();
+
+
+    let isMaximized = $state(false);
+
+    let unlistenMax: () => void;
+    onMount(async () => {
+        isMaximized = await appWindow.isMaximized();
+
+        unlistenMax = await appWindow.onResized(async () => {
+            isMaximized = await appWindow.isMaximized();
+        });
+    });
+
+    onDestroy(() => {
+        unlistenMax();
+    })
+
+    function handleToggleMaximize() {
+        appWindow.toggleMaximize()
+    }
+
+    function handleMinimize() {
+        appWindow.minimize()
+    }
+
+    function handleClose() {
+        appWindow.close()
+    }
+
 </script>
 
-<div class="titlebar" data-tauri-drag-region>
+<div class="titlebar {os}" data-tauri-drag-region>
     <span class="title-text" data-tauri-drag-region>
         {app_name + " — " + title}
     </span>
 
-    <div class="controls"></div>
+    {#if os === "windows"}
+        <div class="controls">
+            <button class="window-controls" id="titlebar-minimize" title="minimize" onclick={handleMinimize}>
+                <Minus class="icon" size={16}/>
+            </button>
+            <button class="window-controls" id="titlebar-maximize" title="maximize" onclick={handleToggleMaximize}>
+                {#if isMaximized} 
+                    <Copy class="icon" size={16} />
+                {:else}
+                    <Square class="icon" size={16} />
+                {/if}
+            </button>
+            <button class="window-controls" id="titlebar-close" title="close" onclick={handleClose}>
+                <X size={16} />
+            </button>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -18,17 +71,18 @@
         background-color: var(--background);
         display: flex;
         align-items: center;
-        justify-content: center;
-
-        /* CRITICAL: Reserve space for macOS Traffic Lights */
-        padding-left: 80px;
-        padding-right: 16px;
 
         /* Prevent highlighting the title text */
         user-select: none;
         -webkit-user-select: none;
 
         border-bottom: 1px solid var(--background-dark);
+    }
+    
+    .titlebar.macos {
+        /* ADD SPACE FOR MACOS */
+        padding-left: 80px;
+        padding-right: 16px;
     }
 
     .title-text {
@@ -37,12 +91,31 @@
         font-weight: 400;
         font-family: var(--font-system);
         letter-spacing: 0.5px;
+        margin-left: 15px;
+    }
+    
+    .window-controls {
+        height: 100%;
+        width: 2.75rem;
+        background-color: var(--background);
+        color: var(--text);
+        border: none;
+    }
+
+    .window-controls:hover {
+        background-color: var(--background-dark);
+    }
+
+    #titlebar-close:hover {
+        background-color: var(--secondary);
     }
 
     /* If you add buttons inside .controls,
      make sure to set specific drag-region styling so they are clickable
   */
     .controls {
+        display: flex;
+        height: 100%;
         margin-left: auto; /* Pushes controls to the right */
     }
 </style>
