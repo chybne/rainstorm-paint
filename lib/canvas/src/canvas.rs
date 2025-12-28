@@ -6,7 +6,6 @@ pub struct Canvas {
     pixels: Vec<u8>,
     zoom: f32,
     rotation: f32,
-    original_offset: Point,
     offset: Point,
 }
 
@@ -21,7 +20,6 @@ impl Default for Canvas {
         let pixels: Vec<u8> = pattern.iter().cycle().take(size).cloned().collect();
         let zoom = 1.0;
         let rotation = 0.0;
-        let original_offset = Point { x: 0.0, y: 0.0 };
         let offset = Point { x: 0.0, y: 0.0 };
 
         Self {
@@ -30,7 +28,6 @@ impl Default for Canvas {
             pixels,
             zoom,
             rotation,
-            original_offset,
             offset,
         }
     }
@@ -48,7 +45,6 @@ impl Canvas {
             .collect();
         let zoom = 1.0;
         let rotation = 0.0;
-        let original_offset = Point { x: 0.0, y: 0.0 };
         let offset = Point { x: 0.0, y: 0.0 };
 
         Self {
@@ -57,13 +53,8 @@ impl Canvas {
             pixels,
             zoom,
             rotation,
-            original_offset,
             offset,
         }
-    }
-
-    pub fn set_original_offset(&mut self, x: f32, y: f32) {
-        self.original_offset = Point { x, y };
     }
 
     pub fn width(&self) -> usize {
@@ -102,11 +93,6 @@ impl Canvas {
 
     /// creates a tranformation matrix for use to upload to the gpu
     pub fn transform_matrix(&self) -> [[f32; 4]; 4] {
-        let get_to_center = glam::Mat4::from_translation(Vec3::new(
-            self.original_offset.x,
-            self.original_offset.y,
-            0.0,
-        ));
         let translation =
             glam::Mat4::from_translation(Vec3::new(-self.offset.x, -self.offset.y, 0.0));
         let scale = glam::Mat4::from_scale(Vec3::new(self.zoom, self.zoom, 1.0));
@@ -117,8 +103,7 @@ impl Canvas {
             0.0,
         ));
 
-        (translation * get_to_center * scale * pivot * rotation * pivot.inverse())
-            .to_cols_array_2d()
+        (translation * scale * pivot * rotation * pivot.inverse()).to_cols_array_2d()
     }
 
     #[deprecated = "moved logic to frontend"]

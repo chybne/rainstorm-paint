@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { platform } from '@tauri-apps/plugin-os';
-    import { getCurrentWindow } from '@tauri-apps/api/window';
-    import { onDestroy, onMount } from 'svelte';
-    import { invoke } from '@tauri-apps/api/core';
+    import { platform } from "@tauri-apps/plugin-os";
+    import { getCurrentWindow } from "@tauri-apps/api/window";
+    import { onDestroy, onMount } from "svelte";
+    import { invoke } from "@tauri-apps/api/core";
 
     const os = platform();
     const appWindow = getCurrentWindow();
@@ -10,7 +10,6 @@
     // You can expose a prop to change the title dynamically
     let app_name = "rainstorm-paint";
     let { title } = $props();
-
 
     let isMaximized = $state(false);
 
@@ -25,9 +24,9 @@
 
     onDestroy(() => {
         unlistenMax();
-    })
+    });
 
-    /* 
+    /*
      * Hopefully a temperary hack,
      * I want to create a tauri plugin that
      * customizes the titlebar natively
@@ -46,17 +45,16 @@
 
     function handleToggleMaximize() {
         clearTimeout(timer);
-        appWindow.toggleMaximize()
+        appWindow.toggleMaximize();
     }
 
     function handleMinimize() {
-        appWindow.minimize()
+        appWindow.minimize();
     }
 
     function handleClose() {
-        appWindow.close()
+        appWindow.close();
     }
-
 </script>
 
 <div class="titlebar {os}" data-tauri-drag-region>
@@ -66,18 +64,35 @@
 
     {#if os === "windows"}
         <div class="controls">
-            <button class="window-controls" id="titlebar-minimize" title="minimize" onclick={handleMinimize}>
+            <button
+                class="window-controls"
+                id="titlebar-minimize"
+                title="minimize"
+                onclick={handleMinimize}
+            >
                 <!-- <Minus class="icon" size={16}/> -->
                 <span>&#xE921;</span>
             </button>
-            <button class="window-controls" id="titlebar-maximize" title="maximize" onclick={handleToggleMaximize} onmouseenter={handleOverlayHoverStart} onmouseleave={handleOverlayHoverCancel}>
-                {#if isMaximized} 
+            <button
+                class="window-controls"
+                id="titlebar-maximize"
+                title="maximize"
+                onclick={handleToggleMaximize}
+                onmouseenter={handleOverlayHoverStart}
+                onmouseleave={handleOverlayHoverCancel}
+            >
+                {#if isMaximized}
                     <span>&#xE923;</span>
                 {:else}
                     <span>&#xE922;</span>
                 {/if}
             </button>
-            <button class="window-controls" id="titlebar-close" title="close" onclick={handleClose}>
+            <button
+                class="window-controls"
+                id="titlebar-close"
+                title="close"
+                onclick={handleClose}
+            >
                 <span>&#xE8BB;</span>
             </button>
         </div>
@@ -97,7 +112,7 @@
 
         border-bottom: 1px solid var(--background-dark);
     }
-    
+
     .titlebar.macos {
         /* ADD SPACE FOR MACOS */
         padding-left: 80px;
@@ -112,7 +127,7 @@
         letter-spacing: 0.5px;
         margin-left: 15px;
     }
-    
+
     .window-controls {
         height: 100%;
         width: 2.75rem;

@@ -4,6 +4,8 @@
     import { invoke } from "@tauri-apps/api/core";
 
     let scale = 1.0;
+    let originalOffsetX = 0.0;
+    let originalOffsetY = 0.0;
     let offsetX = 0.0;
     let offsetY = 0.0;
     let mouseX = 0.0;
@@ -37,13 +39,14 @@
         }
         const rect = element.getBoundingClientRect();
         const dpr = window.devicePixelRatio;
+        console.log("dpr", dpr);
+        originalOffsetX = rect.x * dpr;
+        originalOffsetY = rect.y * dpr;
 
-        // invoke("set_view", {
-        //     x: rect.x * dpr,
-        //     y: rect.y * dpr,
-        //     width: window.innerWidth * dpr,
-        //     height: window.innerHeight * dpr,
-        // });
+        invoke("set_view", {
+            offsetX: -(originalOffsetX + offsetX),
+            offsetY: -(originalOffsetY + offsetY),
+        });
     }
 
     function handleMouseMove(event: MouseEvent) {
@@ -89,8 +92,8 @@
             invoke("process_canvas_input", {
                 input: {
                     type: "panCanvas",
-                    offsetX,
-                    offsetY,
+                    offsetX: offsetX - originalOffsetX,
+                    offsetY: offsetY - originalOffsetY,
                 },
             });
 
@@ -105,8 +108,8 @@
             invoke("process_canvas_input", {
                 input: {
                     type: "panCanvas",
-                    offsetX,
-                    offsetY,
+                    offsetX: offsetX - originalOffsetX,
+                    offsetY: offsetY - originalOffsetY,
                 },
             });
         }

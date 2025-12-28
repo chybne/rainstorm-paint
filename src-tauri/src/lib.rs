@@ -1,4 +1,4 @@
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 
 mod appstate;
 mod input;
@@ -37,6 +37,19 @@ fn attach_canvas(width: usize, height: usize, app: tauri::AppHandle, window: tau
     app.attach_canvas_for_window(label, canvas.clone()).ok();
     app.send_redraw_request_for_window(label).ok();
     app.manage(canvas);
+}
+
+#[tauri::command]
+fn set_view(offset_x: f32, offset_y: f32, app: AppHandle, window: tauri::Window) {
+    let canvas = app.try_state::<Arc<Mutex<Canvas>>>();
+
+    let Some(canvas) = canvas else {
+        return;
+    };
+    let mut canvas = canvas.lock().unwrap();
+
+    canvas.set_offset(offset_x, offset_y);
+    app.send_redraw_request_for_window(window.label()).ok();
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -81,6 +94,7 @@ pub fn run() {
             attach_canvas,
             input::process_canvas_input,
             show_snap_overlay,
+            set_view,
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");
