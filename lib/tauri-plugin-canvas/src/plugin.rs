@@ -8,10 +8,12 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Manager};
+use tauri_runtime::window::WindowId;
 use tauri_runtime::UserEvent;
 use tauri_runtime_wry::tao::event::Event;
 use tauri_runtime_wry::tao::event::WindowEvent as TaoWindowEvent;
 use tauri_runtime_wry::tao::event_loop::{EventLoopProxy, EventLoopWindowTarget};
+use tauri_runtime_wry::tao::window::WindowId as TaoWindowId;
 use tauri_runtime_wry::{Message, Plugin, PluginBuilder};
 
 type CanvasWindowMap = Arc<Mutex<HashMap<String, CanvasWindow>>>;
@@ -60,13 +62,18 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
         context: tauri_runtime_wry::EventLoopIterationContext<'_, T>,
         _web_context: &tauri_runtime_wry::WebContextStore,
     ) -> bool {
+        let mut windows = self.windows.lock().unwrap();
+
         match event {
             Event::WindowEvent {
                 window_id, event, ..
             } => {
+                println!("window event sent");
+
                 if let Some(label) = get_label_from_tao_id(window_id, &context) {
-                    let mut windows = self.windows.lock().unwrap();
                     if let Some(canvas_win) = windows.get_mut(&label) {
+                        /* hackiest of hacks but whateves */
+                        canvas_win.tao_id = Some(window_id.clone());
                         match event {
                             TaoWindowEvent::Resized(size) => {
                                 if let Some(canvas) = &canvas_win.canvas {
@@ -106,8 +113,6 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
                     break 'a;
                 };
 
-                let mut windows = self.windows.lock().unwrap();
-
                 let Some(canvas_win) = windows.get_mut(&label) else {
                     break 'a;
                 };
@@ -117,19 +122,6 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
                     canvas_win.renderer.update(&*canvas);
                     canvas_win.renderer.render();
                 };
-
-                {
-                    let win_id = get_id_from_tao_id(window_id, &context);
-
-                    if let Some(id) = win_id {
-                        proxy
-                            .send_event(Message::Window(
-                                id,
-                                tauri_runtime_wry::WindowMessage::RequestRedraw,
-                            ))
-                            .ok();
-                    }
-                }
             }
             &_ => {}
         }
@@ -139,8 +131,20 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
 }
 
 struct CanvasWindow {
+    is_dirty: bool,
+    tao_id: Option<TaoWindowId>,
     canvas: Option<Arc<Mutex<Canvas>>>,
     renderer: RenderState,
+}
+
+impl CanvasWindow {
+    pub fn make_dirty(&mut self) {
+        self.is_dirty = true;
+    }
+
+    pub fn make_clean(&mut self) {
+        self.is_dirty = false;
+    }
 }
 
 pub trait AppHandleExt {
@@ -168,6 +172,8 @@ impl AppHandleExt for AppHandle {
             label.to_string(),
             CanvasWindow {
                 canvas: None,
+                tao_id: None,
+                is_dirty: false,
                 renderer,
             },
         );
@@ -193,6 +199,7 @@ impl AppHandleExt for AppHandle {
         window.canvas = Some(canvas.clone());
         let canvas = canvas.lock().unwrap();
         window.renderer.attach_canvas(&canvas);
+        window.make_dirty();
 
         Ok(())
     }
@@ -208,13 +215,11 @@ impl AppHandleExt for AppHandle {
             .get_mut(&label.to_string())
             .ok_or(Error::msg("No window with label found"))?;
 
-        let Some(canvas) = &window.canvas else {
-            return Ok(());
-        };
+        window.make_dirty();
 
-        let ccanvas = canvas.lock().unwrap();
-        window.renderer.update(&ccanvas);
-        window.renderer.render();
+        if let Some(tid) = window.tao_id {
+            self.send_tao_window_event(tid, tauri_runtime_wry::WindowMessage::RequestRedraw);
+        }
 
         Ok(())
     }

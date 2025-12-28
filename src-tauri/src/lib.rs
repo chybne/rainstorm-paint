@@ -17,6 +17,7 @@ fn attach_canvas(width: usize, height: usize, app: tauri::AppHandle, window: tau
     println!("{label} sent this call");
     let canvas = Arc::new(Mutex::new(Canvas::new(width, height)));
     app.attach_canvas_for_window(label, canvas.clone()).ok();
+    app.send_redraw_request_for_window(label).ok();
     app.manage(canvas);
 }
 

@@ -3,11 +3,18 @@ pub mod canvas_input;
 use canvas::{brush::stroke::StrokeManager, Canvas};
 use canvas_input::CanvasInput;
 use std::sync::{Arc, Mutex};
+use tauri::Window;
+use tauri_plugin_canvas::AppHandleExt;
 
 use crate::appstate::AppState;
 
 #[tauri::command]
-pub fn process_canvas_input(input: CanvasInput, canvas: tauri::State<Arc<Mutex<Canvas>>>) {
+pub fn process_canvas_input(
+    input: CanvasInput,
+    canvas: tauri::State<Arc<Mutex<Canvas>>>,
+    app: tauri::AppHandle,
+    window: Window,
+) {
     let mut canvas = canvas.lock().unwrap();
 
     println!("Received {input} input");
@@ -23,6 +30,8 @@ pub fn process_canvas_input(input: CanvasInput, canvas: tauri::State<Arc<Mutex<C
             pressure,
         } => {}
     }
+
+    app.send_redraw_request_for_window(window.label()).ok();
 }
 
 fn handle_zoom(zoom: f32, canvas: &mut Canvas) {
