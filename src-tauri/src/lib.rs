@@ -1,59 +1,75 @@
-use tauri::{Manager, RunEvent, WindowEvent};
+use tauri::Manager;
 
 mod appstate;
 mod input;
-mod pipeline;
 use appstate::AppState;
 use canvas::Canvas;
-use pipeline::Pipeline;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+
+use tauri_plugin_canvas::{AppHandleExt, CanvasPluginBuilder};
 
 #[tauri::command]
-fn attach_canvas(
-    width: usize,
-    height: usize,
-    state: tauri::State<Mutex<AppState>>,
-    pipeline: tauri::State<Pipeline>,
-) {
-    let mut state = state.lock().unwrap();
-    let canvas = Canvas::new(width, height);
-    pipeline.attach_canvas(&canvas);
-    state.set_canvas(canvas);
+async fn show_snap_overlay() {
+    #[cfg(target_os = "windows")]
+    {
+        use enigo::{Direction, Enigo, Key, Keyboard, Settings};
+
+        // press win + z using enigo
+        let mut enigo = Enigo::new(&Settings::default()).unwrap();
+        enigo.key(Key::Meta, Direction::Press).ok();
+        enigo.key(Key::Z, Direction::Click).ok();
+        enigo.key(Key::Meta, Direction::Release).ok();
+
+        // Wait 50 ms
+        std::thread::sleep(std::time::Duration::from_millis(50));
+
+        // Press Alt to hide the ugly numbers
+        enigo.key(Key::Alt, Direction::Click).ok();
+    }
 }
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
-fn set_view(
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
-    state: tauri::State<Mutex<AppState>>,
-    pipeline: tauri::State<Pipeline>,
-) {
-    let mut state = state.lock().unwrap();
-    let canvas = state.canvas_mut();
-    if let Some(c) = canvas {
-        c.set_original_offset(x, y);
-        pipeline.change_size(width as u32, height as u32, canvas);
-    }
+fn attach_canvas(width: usize, height: usize, app: tauri::AppHandle, window: tauri::Window) {
+    let label = window.label();
+
+    println!("{label} sent this call");
+    let canvas = Arc::new(Mutex::new(Canvas::new(width, height)));
+    app.attach_canvas_for_window(label, canvas.clone()).ok();
+    app.send_redraw_request_for_window(label).ok();
+    app.manage(canvas);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .setup(|app| {
-            let main_window = app.get_window("main").unwrap();
+            /*
+             * might want to write a plugin
+             * to directly customize the titlebar on windows
+             */
+            #[cfg(target_os = "windows")]
+            {
+                let window = app
+                    .get_window("main")
+                    .expect("there should be a main window");
+
+                window.set_decorations(false)?;
+            }
+
+            app.wry_plugin(CanvasPluginBuilder::new(app.handle().to_owned()));
+
+            app.handle().start_renderer_for_window("main").ok();
 
             let state = AppState::default();
             app.manage(Mutex::new(state));
 
-            let pipeline = Pipeline::with_window(main_window)?;
+            // let pipeline = Pipeline::with_window(main_window)?;
 
             // let canvas = Mutex::new(Canvas::default());
             // pipeline.attach_canvas(&canvas);
 
-            app.manage(pipeline);
+            // app.manage(pipeline);
             // app.manage(canvas);
 
             println!("Finished!");
@@ -62,39 +78,10 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            set_view,
             attach_canvas,
             input::process_canvas_input,
+            show_snap_overlay,
         ])
-        .build(tauri::generate_context!())
-        .expect("error while building tauri application")
-        .run(|app_handle, event| match event {
-            RunEvent::WindowEvent {
-                label: _,
-                event: WindowEvent::Resized(size),
-                ..
-            } => {
-                let pipeline = app_handle.state::<Pipeline>();
-                let state = app_handle.state::<Mutex<AppState>>();
-                let state = state.lock().unwrap();
-                pipeline.change_size(size.width, size.height, state.canvas());
-
-                // let canvas = app_handle.state::<Mutex<Canvas>>();
-                // let canvas = canvas.lock().unwrap();
-                // pipeline.change_size(size.width, size.height, &canvas);
-            }
-            RunEvent::MainEventsCleared => {
-                let pipeline = app_handle.state::<Pipeline>();
-                let state = app_handle.state::<Mutex<AppState>>();
-                let state = state.lock().unwrap();
-                if let Some(c) = state.canvas() {
-                    pipeline.update(c);
-                }
-
-                // let canvas = app_handle.state::<Mutex<Canvas>>();
-                // pipeline.update(&canvas);
-                pipeline.render();
-            }
-            _ => (),
-        });
+        .run(tauri::generate_context!())
+        .expect("error while building tauri application");
 }

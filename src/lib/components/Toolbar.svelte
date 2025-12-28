@@ -1,29 +1,25 @@
 <script lang="ts">
     import ToolbarButton from "$lib/components/ToolbarButton.svelte";
-    import { Brush, Eraser, Lasso, Pipette } from "@lucide/svelte";
+    import { ToolData, Tool, getActiveTool, selectTool } from "$lib/context/toolContext";
 
-    let activeTool: string = "brush";
+    
+    let selectedTool = $state({
+        tool: Tool.Pan,
+    });
+    selectTool(selectedTool);
 
-    const tools = [
-        { name: "brush", icon: Brush, label: "Brush" },
-        { name: "eraser", icon: Eraser, label: "Eraser" },
-        { name: "lasso", icon: Lasso, label: "Lasso" },
-        { name: "color-picker", icon: Pipette, label: "Color Picker" },
-    ];
-
-    const setActiveTool = (toolName: string) => {
-        activeTool = toolName;
-    };
+    let activeTool = getActiveTool();
+   
 </script>
 
 <div class="toolbar" role="toolbar">
-    {#each tools as tool}
+    {#each ToolData as tool}
         <ToolbarButton
             Icon={tool.icon}
             Label={tool.label}
-            isActive={tool.name === activeTool}
+            isActive={tool.tool === activeTool.tool}
             onclick={() => {
-                setActiveTool(tool.name);
+                selectedTool.tool = tool.tool;
             }}
         />
     {/each}
