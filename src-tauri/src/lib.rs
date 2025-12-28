@@ -1,14 +1,32 @@
-use tauri::{Manager, RunEvent, Window, WindowEvent};
+use tauri::Manager;
 
 mod appstate;
 mod input;
-mod pipeline;
 use appstate::AppState;
 use canvas::Canvas;
-use pipeline::Pipeline;
 use std::sync::{Arc, Mutex};
 
 use tauri_plugin_canvas::{AppHandleExt, CanvasPluginBuilder};
+
+#[tauri::command]
+async fn show_snap_overlay() {
+    #[cfg(target_os = "windows")]
+    {
+        use enigo::{Direction, Enigo, Key, Keyboard, Settings};
+
+        // press win + z using enigo
+        let mut enigo = Enigo::new(&Settings::default()).unwrap();
+        enigo.key(Key::Meta, Direction::Press).ok();
+        enigo.key(Key::Z, Direction::Click).ok();
+        enigo.key(Key::Meta, Direction::Release).ok();
+
+        // Wait 50 ms
+        std::thread::sleep(std::time::Duration::from_millis(50));
+
+        // Press Alt to hide the ugly numbers
+        enigo.key(Key::Alt, Direction::Click).ok();
+    }
+}
 
 #[tauri::command]
 fn attach_canvas(width: usize, height: usize, app: tauri::AppHandle, window: tauri::Window) {
@@ -21,21 +39,15 @@ fn attach_canvas(width: usize, height: usize, app: tauri::AppHandle, window: tau
     app.manage(canvas);
 }
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn set_view(x: f32, y: f32, width: f32, height: f32, state: tauri::State<Mutex<AppState>>) {
-    let mut state = state.lock().unwrap();
-    let canvas = state.canvas_mut();
-    if let Some(c) = canvas {
-        c.set_original_offset(x, y);
-    }
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
         .setup(|app| {
+            /*
+             * might want to write a plugin
+             * to directly customize the titlebar on windows
+             */
             #[cfg(target_os = "windows")]
             {
                 let window = app
@@ -66,9 +78,9 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            set_view,
             attach_canvas,
             input::process_canvas_input,
+            show_snap_overlay,
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");

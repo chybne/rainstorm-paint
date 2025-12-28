@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Manager};
-use tauri_runtime::window::WindowId;
 use tauri_runtime::UserEvent;
 use tauri_runtime_wry::tao::event::Event;
 use tauri_runtime_wry::tao::event::WindowEvent as TaoWindowEvent;
@@ -44,7 +43,7 @@ pub struct CanvasRendererPlugin<T: UserEvent> {
 }
 
 impl<T: UserEvent> CanvasRendererPlugin<T> {
-    fn new(windows: CanvasWindowMap, context: tauri_runtime_wry::Context<T>) -> Self {
+    fn new(windows: CanvasWindowMap, _: tauri_runtime_wry::Context<T>) -> Self {
         Self {
             windows,
             _phantom: PhantomData,
@@ -68,8 +67,6 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
             Event::WindowEvent {
                 window_id, event, ..
             } => {
-                println!("window event sent");
-
                 if let Some(label) = get_label_from_tao_id(window_id, &context) {
                     if let Some(canvas_win) = windows.get_mut(&label) {
                         /* hackiest of hacks but whateves */
@@ -131,20 +128,9 @@ impl<T: UserEvent> Plugin<T> for CanvasRendererPlugin<T> {
 }
 
 struct CanvasWindow {
-    is_dirty: bool,
     tao_id: Option<TaoWindowId>,
     canvas: Option<Arc<Mutex<Canvas>>>,
     renderer: RenderState,
-}
-
-impl CanvasWindow {
-    pub fn make_dirty(&mut self) {
-        self.is_dirty = true;
-    }
-
-    pub fn make_clean(&mut self) {
-        self.is_dirty = false;
-    }
 }
 
 pub trait AppHandleExt {
@@ -173,7 +159,6 @@ impl AppHandleExt for AppHandle {
             CanvasWindow {
                 canvas: None,
                 tao_id: None,
-                is_dirty: false,
                 renderer,
             },
         );
@@ -186,7 +171,7 @@ impl AppHandleExt for AppHandle {
             .try_state::<CanvasWindowMap>()
             .ok_or(Error::msg("TauriPluginCanvasRenderer is not initialized"))?;
 
-        let wwindow = self
+        let _ = self
             .get_window(label)
             .ok_or(Error::msg("No window found with the provided label"))?;
 
@@ -199,7 +184,6 @@ impl AppHandleExt for AppHandle {
         window.canvas = Some(canvas.clone());
         let canvas = canvas.lock().unwrap();
         window.renderer.attach_canvas(&canvas);
-        window.make_dirty();
 
         Ok(())
     }
@@ -215,10 +199,9 @@ impl AppHandleExt for AppHandle {
             .get_mut(&label.to_string())
             .ok_or(Error::msg("No window with label found"))?;
 
-        window.make_dirty();
-
         if let Some(tid) = window.tao_id {
-            self.send_tao_window_event(tid, tauri_runtime_wry::WindowMessage::RequestRedraw);
+            self.send_tao_window_event(tid, tauri_runtime_wry::WindowMessage::RequestRedraw)
+                .ok();
         }
 
         Ok(())

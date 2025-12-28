@@ -6,8 +6,6 @@ use std::sync::{Arc, Mutex};
 use tauri::Window;
 use tauri_plugin_canvas::AppHandleExt;
 
-use crate::appstate::AppState;
-
 #[tauri::command]
 pub fn process_canvas_input(
     input: CanvasInput,
@@ -24,11 +22,7 @@ pub fn process_canvas_input(
         CanvasInput::PanCanvas { offset_x, offset_y } => {
             handle_pan(offset_x, offset_y, &mut canvas)
         }
-        CanvasInput::BeginStroke {
-            mouse_x,
-            mouse_y,
-            pressure,
-        } => {}
+        _ => {}
     }
 
     app.send_redraw_request_for_window(window.label()).ok();

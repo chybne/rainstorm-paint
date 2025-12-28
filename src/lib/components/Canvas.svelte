@@ -38,12 +38,12 @@
         const rect = element.getBoundingClientRect();
         const dpr = window.devicePixelRatio;
 
-        invoke("set_view", {
-            x: rect.x * dpr,
-            y: rect.y * dpr,
-            width: window.innerWidth * dpr,
-            height: window.innerHeight * dpr,
-        });
+        // invoke("set_view", {
+        //     x: rect.x * dpr,
+        //     y: rect.y * dpr,
+        //     width: window.innerWidth * dpr,
+        //     height: window.innerHeight * dpr,
+        // });
     }
 
     function handleMouseMove(event: MouseEvent) {

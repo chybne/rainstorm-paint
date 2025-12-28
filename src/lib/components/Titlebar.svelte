@@ -1,8 +1,8 @@
 <script lang="ts">
     import { platform } from '@tauri-apps/plugin-os';
     import { getCurrentWindow } from '@tauri-apps/api/window';
-    import { X, Minus, Copy, Square} from "@lucide/svelte"; 
     import { onDestroy, onMount } from 'svelte';
+    import { invoke } from '@tauri-apps/api/core';
 
     const os = platform();
     const appWindow = getCurrentWindow();
@@ -27,7 +27,25 @@
         unlistenMax();
     })
 
+    /* 
+     * Hopefully a temperary hack,
+     * I want to create a tauri plugin that
+     * customizes the titlebar natively
+     */
+    let timer: number;
+    function handleOverlayHoverStart() {
+        timer = setTimeout(showSnapOverlay, 620);
+    }
+    function handleOverlayHoverCancel() {
+        clearTimeout(timer);
+    }
+
+    function showSnapOverlay() {
+        appWindow.setFocus().then(() => invoke("show_snap_overlay"));
+    }
+
     function handleToggleMaximize() {
+        clearTimeout(timer);
         appWindow.toggleMaximize()
     }
 
@@ -49,17 +67,18 @@
     {#if os === "windows"}
         <div class="controls">
             <button class="window-controls" id="titlebar-minimize" title="minimize" onclick={handleMinimize}>
-                <Minus class="icon" size={16}/>
+                <!-- <Minus class="icon" size={16}/> -->
+                <span>&#xE921;</span>
             </button>
-            <button class="window-controls" id="titlebar-maximize" title="maximize" onclick={handleToggleMaximize}>
+            <button class="window-controls" id="titlebar-maximize" title="maximize" onclick={handleToggleMaximize} onmouseenter={handleOverlayHoverStart} onmouseleave={handleOverlayHoverCancel}>
                 {#if isMaximized} 
-                    <Copy class="icon" size={16} />
+                    <span>&#xE923;</span>
                 {:else}
-                    <Square class="icon" size={16} />
+                    <span>&#xE922;</span>
                 {/if}
             </button>
             <button class="window-controls" id="titlebar-close" title="close" onclick={handleClose}>
-                <X size={16} />
+                <span>&#xE8BB;</span>
             </button>
         </div>
     {/if}
@@ -100,6 +119,9 @@
         background-color: var(--background);
         color: var(--text);
         border: none;
+
+        font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets", sans-serif;
+        font-size: 10px;
     }
 
     .window-controls:hover {
