@@ -1,8 +1,10 @@
 [workspace]
 resolver = "3"
-members = ["lib/canvas", "src-tauri", "lib/tauri-plugin-canvas"]
+members = ["src-tauri", "lib/tauri-plugin-canvas", "lib/input", "lib/canvas"]
 
 [workspace.dependencies]
-tauri-plugin-canvas ={ path = "lib/tauri-plugin-canvas" }
+tauri-plugin-canvas = { path = "lib/tauri-plugin-canvas" }
+input = { path = "lib/input" }
 canvas = { path = "lib/canvas" }
 glam = "0.30.9"
+anyhow = "1.0.100"

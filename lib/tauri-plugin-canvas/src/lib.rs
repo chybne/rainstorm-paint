@@ -1,9 +1,8 @@
+pub use models::*;
 use tauri::{
     plugin::{Builder, TauriPlugin},
     Manager, Runtime,
 };
-
-pub use models::*;
 
 #[cfg(desktop)]
 mod desktop;

@@ -42,10 +42,10 @@
         console.log("dpr", dpr);
         originalOffsetX = rect.x * dpr;
         originalOffsetY = rect.y * dpr;
-
+        console.log("huh");
         invoke("set_view", {
-            offsetX: -(originalOffsetX + offsetX),
-            offsetY: -(originalOffsetY + offsetY),
+            offsetX: -originalOffsetX + offsetX,
+            offsetY: -originalOffsetY + offsetY,
         });
     }
 

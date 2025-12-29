@@ -1,0 +1,26 @@
+[package]
+name = "input"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+raw-window-handle = "0.6.2"
+thiserror = "2.0.17"
+block2 = "0.6.2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.3"
+objc2-app-kit = { version = "0.3.2", default-features = false, features = [
+    "NSView",
+    "NSWindow",
+    "NSResponder",
+    "NSGestureRecognizer",
+    "NSMagnificationGestureRecognizer",
+    "NSRotationGestureRecognizer",
+    "NSEvent",
+    "objc2-core-foundation",
+    "block2",
+] }
+objc2-foundation = "0.3.2"
+objc2-core-foundation = "0.3.2"
+objc2-core-graphics = "0.3.2"

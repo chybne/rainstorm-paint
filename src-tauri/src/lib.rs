@@ -1,10 +1,15 @@
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, Window};
 
 mod appstate;
-mod input;
+mod event_handler;
 use appstate::AppState;
 use canvas::Canvas;
-use std::sync::{Arc, Mutex};
+use input::{InputEvent, InputEventSink, InputSendError};
+use std::{
+    ops::Deref,
+    sync::{Arc, Mutex},
+};
+use tauri::async_runtime::Sender;
 
 use tauri_plugin_canvas::{AppHandleExt, CanvasPluginBuilder};
 
@@ -61,14 +66,17 @@ pub fn run() {
              * might want to write a plugin
              * to directly customize the titlebar on windows
              */
+
+            let window = app
+                .get_window("main")
+                .expect("there should be a main window");
+
             #[cfg(target_os = "windows")]
             {
-                let window = app
-                    .get_window("main")
-                    .expect("there should be a main window");
-
                 window.set_decorations(false)?;
             }
+
+            start_getting_input(window);
 
             app.wry_plugin(CanvasPluginBuilder::new(app.handle().to_owned()));
 
@@ -92,10 +100,44 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             attach_canvas,
-            input::process_canvas_input,
+            event_handler::process_canvas_input,
             show_snap_overlay,
             set_view,
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");
+}
+
+fn start_getting_input(window: Window) {
+    let (send, mut recv) = tauri::async_runtime::channel::<InputEvent>(64);
+
+    let send = InputEventSender(send);
+
+    if let Err(e) = input::start_tracking_gestures(window, Box::new(send)) {
+        println!("Error initialize input sender {e}");
+    }
+
+    tauri::async_runtime::spawn(async move {
+        while let Some(event) = recv.recv().await {
+            println!("{event:?}");
+        }
+    });
+}
+
+#[derive(Debug)]
+struct InputEventSender(Sender<InputEvent>);
+impl Deref for InputEventSender {
+    type Target = Sender<InputEvent>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl InputEventSink for InputEventSender {
+    fn try_send(&self, event: InputEvent) -> Result<(), InputSendError> {
+        match self.0.try_send(event) {
+            Ok(()) => Ok(()),
+            Err(_) => Err(InputSendError::FailedSend),
+        }
+    }
 }
