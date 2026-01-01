@@ -59,29 +59,18 @@ impl StrokeManager {
         let points = stroke.add_point(point);
         println!("points: {points:?}");
 
-        canvas.draw_pixel(
-            x as usize,
-            y as usize,
-            Color {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0,
-            },
-        );
-
-        // for p in points.into_iter() {
-        //     canvas.draw_pixel(
-        //         p.x as usize,
-        //         p.y as usize,
-        //         Color {
-        //             r: 0,
-        //             g: 0,
-        //             b: 0,
-        //             a: 0,
-        //         },
-        //     );
-        // }
+        for p in points.into_iter() {
+            canvas.draw_pixel(
+                p.x as usize,
+                p.y as usize,
+                Color {
+                    r: 0,
+                    g: 0,
+                    b: 0,
+                    a: 0,
+                },
+            );
+        }
     }
 
     pub fn end_stroke(&mut self, point: StrokePositionalData, canvas: &mut Canvas) {
