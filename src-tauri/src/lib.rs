@@ -3,7 +3,7 @@ use tauri::{AppHandle, Manager};
 mod appstate;
 mod event_handler;
 use appstate::AppState;
-use canvas::Canvas;
+use canvas::{brush::stroke::StrokeManager, Canvas};
 use std::sync::{Arc, Mutex};
 
 use tauri_plugin_canvas::{AppHandleExt, CanvasPluginBuilder};
@@ -74,20 +74,15 @@ pub fn run() {
             app.wry_plugin(CanvasPluginBuilder::new(app.handle().to_owned()));
 
             app.handle().start_renderer_for_window("main").ok();
-            app.handle()
-                .send_redraw_request_for_window(window.label())
-                .ok();
+            // app.handle()
+            //     .send_redraw_request_for_window(window.label())
+            //     .ok();
 
             let state = AppState::default();
             app.manage(Mutex::new(state));
 
-            // let pipeline = Pipeline::with_window(main_window)?;
-
-            // let canvas = Mutex::new(Canvas::default());
-            // pipeline.attach_canvas(&canvas);
-
-            // app.manage(pipeline);
-            // app.manage(canvas);
+            let stroke_manager = StrokeManager::new();
+            app.manage(Mutex::new(stroke_manager));
 
             println!("Finished!");
 

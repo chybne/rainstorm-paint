@@ -3,18 +3,12 @@
     import { onMount } from "svelte";
     import { invoke } from "@tauri-apps/api/core";
     import { Tool, getActiveTool } from "$lib/context/toolContext";
+    import { ToolStrategies, handleMagnifyGesture, handlePanGesture} from "./canvas/canvas";
+
 
     let toolState = getActiveTool();
 
     let activeTool = $derived(toolState.tool);
-
-    let scale = 1.0;
-    let offsetX = 0.0;
-    let offsetY = 0.0;
-    let mouseX = 0.0;
-    let mouseY = 0.0;
-
-    let isMouseDown = false;
 
     // this element is binded to the canvas
     let element: HTMLDivElement;
@@ -24,58 +18,22 @@
     }
 
     function handlePointerDown(event: PointerEvent) {
-        if (activeTool !== Tool.Brush) return;
-         
-        invoke('process_canvas_input', {
-            input: {
-                type: "beginStroke",
-                posX: event.pageX,
-                posY: event.pageY,
-                pressure: event.pointerType === "mouse" ? 1.0 : event.pressure
-            }
-        });
+        event.preventDefault();
+
+        console.log("pointer down");
+        ToolStrategies[activeTool]?.handlePointerDown(event);
     }
     function handlePointerMove(event: PointerEvent) {
-        if (activeTool !== Tool.Brush || !isMouseDown) return;
+        event.preventDefault();
 
-        invoke('process_canvas_input', {input: {
-            type: "continueStroke",
-            posX: event.pageX,
-            posY: event.pageY,
-            pressure: event.pointerType === "mouse" ? 1.0 : event.pressure
-        }});
+        console.log("pointer moved")
+        ToolStrategies[activeTool]?.handlePointerMove(event);
     }
 
     function handlePointerUp(event: PointerEvent) {
-        if(activeTool !== Tool.Brush) return;
-
-        console.log("PointerUpEvent", event.pressure);
-        invoke('process_canvas_input', {input: {
-            type: "endStroke",
-            posX: event.pageX,
-            posY: event.pageY,
-            pressure: event.pressure
-        }})
-    }
-    
-
-    function zoomRelativeToPoint(
-        zoom: number,
-        mouseX: number,
-        mouseY: number,
-    ): [number, number] {
-        const offset = vec2.fromValues(offsetX, offsetY);
-        const mousePos = vec2.fromValues(mouseX, mouseY);
-
-        const result = vec2.create();
-        vec2.add(result, mousePos, offset);
-        vec2.scale(result, result, 1 / scale);
-
-        const newCoords = vec2.create();
-        vec2.scale(newCoords, result, zoom);
-        vec2.sub(newCoords, newCoords, mousePos);
-
-        return [newCoords[0], newCoords[1]];
+        event.preventDefault();
+        console.log("pointer up");
+        ToolStrategies[activeTool]?.handlePointerUp(event);
     }
 
     function updateRect() {
@@ -87,87 +45,13 @@
         console.log("dpr", dpr);
     }
 
-    function handleMouseDown(_event: MouseEvent) {
-        isMouseDown = true;
-    }
-
-    function handleMouseLeave(_event: MouseEvent) {
-        isMouseDown = false;
-    }
-
-    function handleMouseUp(_event: MouseEvent) {
-        isMouseDown = false;
-    }
-
-    function handleMouseMove(event: MouseEvent) {
-        if (isMouseDown && activeTool === Tool.Pan) {
-            offsetX -= event.movementX;
-            offsetY -= event.movementY;
-            invoke("process_canvas_input", {input: {
-                type: "panCanvas",
-                offsetX,
-                offsetY
-            }});
-        }
-
-        mouseX = event.pageX;
-        mouseY = event.pageY;
-    }
-
     function handleWheel(event: WheelEvent) {
-        const dpr = window.devicePixelRatio;
+        event.preventDefault();
 
-        /* for pinch gestures */
         if (event.ctrlKey) {
-            event.preventDefault(); // prevent zooming the page
-            const zoomFactor = 1 - event.deltaY * 0.01;
-            let newScale = scale * zoomFactor;
-            console.log(
-                "zoomFactor: ",
-                zoomFactor,
-                "deltaY",
-                event.deltaY,
-                "new_scale",
-                newScale,
-            );
-            /* clamp the value Definitely needs to be calculated before hand*/
-            newScale = Math.min(Math.max(newScale, 0.3), 5.0);
-            const [newOffsetX, newOffsetY] = zoomRelativeToPoint(
-                newScale,
-                mouseX * dpr,
-                mouseY * dpr,
-            );
-
-            scale = newScale;
-            offsetX = newOffsetX;
-            offsetY = newOffsetY;
-
-            invoke("process_canvas_input", {
-                input: {
-                    type: "zoomCanvas",
-                    zoom: scale,
-                },
-            });
-            invoke("process_canvas_input", {
-                input: {
-                    type: "panCanvas",
-                    offsetX,
-                    offsetY,
-                },
-            });
+            handleMagnifyGesture(event);
         } else {
-            /* Pan gestures */
-            event.preventDefault();
-            offsetX += event.deltaX * 2.0;
-            offsetY += event.deltaY * 2.0;
-
-            invoke("process_canvas_input", {
-                input: {
-                    type: "panCanvas",
-                    offsetX: offsetX,
-                    offsetY: offsetY,
-                },
-            });
+            handlePanGesture(event);
         }
     }
 
@@ -199,10 +83,6 @@
     aria-label="dd"
     bind:this={element}
     onwheel={handleWheel}
-    onmousemove={handleMouseMove}
-    onmousedown={handleMouseDown}
-    onmouseleave={handleMouseLeave}
-    onmouseup={handleMouseUp}
     onpointerenter={handlePointerEnter}
     onpointermove={handlePointerMove}
     onpointerdown={handlePointerDown}
@@ -212,6 +92,7 @@
 <style>
     .canvas {
         flex: 1;
+        touch-action: none;
         /*background-color: red;*/
     }
 </style>

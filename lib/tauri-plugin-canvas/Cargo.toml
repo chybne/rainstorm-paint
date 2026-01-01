@@ -19,6 +19,8 @@ anyhow = { workspace = true }
 tauri-runtime = "2.9.2"
 serde = "1.0"
 thiserror = "2"
+sysinfo = "0.37"
+
 
 [build-dependencies]
 tauri-plugin = { version = "2.5.2", features = ["build"] }

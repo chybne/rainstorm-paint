@@ -1,5 +1,6 @@
-use std::fmt::{write, Display};
+use std::fmt::Display;
 
+use canvas::brush::stroke::StrokePositionalData;
 use serde::{Deserialize, Serialize};
 
 /// All of the different actions the user can perform on the canvas
@@ -53,5 +54,14 @@ impl Display for PointerEvent {
             "{{pos: ({}, {}) pressure: {}}}",
             self.pos_x, self.pos_y, self.pressure
         )
+    }
+}
+impl From<PointerEvent> for StrokePositionalData {
+    fn from(value: PointerEvent) -> Self {
+        Self {
+            x: value.pos_x,
+            y: value.pos_y,
+            pressure: value.pressure,
+        }
     }
 }

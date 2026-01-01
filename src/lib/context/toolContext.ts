@@ -12,7 +12,9 @@ export enum Tool {
 export const ToolData: Readonly<Array<{tool: Tool, icon: Component; label: string}>> = [
     { tool: Tool.Brush, icon: Brush, label: "Brush" },
     { tool: Tool.Eraser, icon: Eraser, label: "Eraser" },
-    { tool: Tool.Lasso, icon: Lasso, label: "Lasso"},
+
+    /* Not planned for MVP definitely planned futrue feature */
+    // { tool: Tool.Lasso, icon: Lasso, label: "Lasso"},
     { tool: Tool.ColorPicker, icon: Pipette, label: "Color Picker"},
     { tool: Tool.Pan, icon: Hand, label: "Pan"},
 ] as const;  

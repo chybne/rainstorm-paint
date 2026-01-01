@@ -1,5 +1,7 @@
 use glam::{self, Vec2, Vec3};
 
+use crate::Color;
+
 pub struct Canvas {
     width: usize,
     height: usize,
@@ -104,6 +106,31 @@ impl Canvas {
         ));
 
         (translation * scale * pivot * rotation * pivot.inverse()).to_cols_array_2d()
+    }
+
+    pub fn inverse_transform_matrix(&self) -> [[f32; 4]; 4] {
+        glam::Mat4::from_cols_array_2d(&self.transform_matrix())
+            .inverse()
+            .to_cols_array_2d()
+    }
+
+    pub fn draw_pixel(&mut self, x: usize, y: usize, color: Color) {
+        if x >= self.width || y >= self.height {
+            return;
+        }
+
+        let position = ((y * self.width + x) * 4) as usize;
+
+        self.pixels[position] = color.r;
+        self.pixels[position + 1] = color.b;
+        self.pixels[position + 2] = color.g;
+        self.pixels[position + 3] = color.a;
+    }
+
+    pub fn translate_screen_to_canvas(&self, x: f32, y: f32) -> (f32, f32) {
+        let translated_points = glam::Mat4::from_cols_array_2d(&self.inverse_transform_matrix())
+            * glam::Vec4::new(x, y, 0.0, 1.0);
+        (translated_points.x, translated_points.y)
     }
 
     #[deprecated = "moved logic to frontend"]
