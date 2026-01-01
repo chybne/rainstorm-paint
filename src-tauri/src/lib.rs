@@ -1,15 +1,10 @@
-use tauri::{AppHandle, Manager, Window};
+use tauri::{AppHandle, Manager};
 
 mod appstate;
 mod event_handler;
 use appstate::AppState;
 use canvas::Canvas;
-use input::{InputEvent, InputEventSink, InputSendError};
-use std::{
-    ops::Deref,
-    sync::{Arc, Mutex},
-};
-use tauri::async_runtime::Sender;
+use std::sync::{Arc, Mutex};
 
 use tauri_plugin_canvas::{AppHandleExt, CanvasPluginBuilder};
 
@@ -68,7 +63,7 @@ pub fn run() {
              */
 
             let window = app
-                .get_window("main")
+                .get_webview_window("main")
                 .expect("there should be a main window");
 
             #[cfg(target_os = "windows")]
@@ -76,11 +71,12 @@ pub fn run() {
                 window.set_decorations(false)?;
             }
 
-            start_getting_input(window);
-
             app.wry_plugin(CanvasPluginBuilder::new(app.handle().to_owned()));
 
             app.handle().start_renderer_for_window("main").ok();
+            app.handle()
+                .send_redraw_request_for_window(window.label())
+                .ok();
 
             let state = AppState::default();
             app.manage(Mutex::new(state));
@@ -106,38 +102,4 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");
-}
-
-fn start_getting_input(window: Window) {
-    let (send, mut recv) = tauri::async_runtime::channel::<InputEvent>(64);
-
-    let send = InputEventSender(send);
-
-    if let Err(e) = input::start_tracking_gestures(window, Box::new(send)) {
-        println!("Error initialize input sender {e}");
-    }
-
-    tauri::async_runtime::spawn(async move {
-        while let Some(event) = recv.recv().await {
-            println!("{event:?}");
-        }
-    });
-}
-
-#[derive(Debug)]
-struct InputEventSender(Sender<InputEvent>);
-impl Deref for InputEventSender {
-    type Target = Sender<InputEvent>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl InputEventSink for InputEventSender {
-    fn try_send(&self, event: InputEvent) -> Result<(), InputSendError> {
-        match self.0.try_send(event) {
-            Ok(()) => Ok(()),
-            Err(_) => Err(InputSendError::FailedSend),
-        }
-    }
 }

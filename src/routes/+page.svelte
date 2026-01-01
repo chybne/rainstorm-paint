@@ -8,7 +8,6 @@
     let error_message = "";
 
     function onCreate() {
-        console.log("hello");
         if (width <= 0 || height <= 0) {
             error_message = "height and width cannot be zero or lower";
         }

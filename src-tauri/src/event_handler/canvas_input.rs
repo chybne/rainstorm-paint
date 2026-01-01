@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{write, Display};
 
 use serde::{Deserialize, Serialize};
 
@@ -13,12 +13,12 @@ pub enum CanvasInput {
     ZoomCanvas { zoom: f32 },
     #[serde(rename_all = "camelCase")]
     PanCanvas { offset_x: f32, offset_y: f32 },
-
-    BeginStroke {
-        mouse_x: f32,
-        mouse_y: f32,
-        pressure: f32,
-    },
+    #[serde(rename_all = "camelCase")]
+    BeginStroke(PointerEvent),
+    #[serde(rename_all = "camelCase")]
+    ContinueStroke(PointerEvent),
+    #[serde(rename_all = "camelCase")]
+    EndStroke(PointerEvent),
 }
 
 impl Display for CanvasInput {
@@ -30,16 +30,28 @@ impl Display for CanvasInput {
             CanvasInput::PanCanvas { offset_x, offset_y } => {
                 write!(f, "PanCanvas(offset_x: {offset_x}, offset_y: {offset_y})")
             }
-            CanvasInput::BeginStroke {
-                mouse_x,
-                mouse_y,
-                pressure,
-            } => {
-                write!(
-                    f,
-                    "StartStroke(mouse_x: {mouse_x}, mouse_y: {mouse_y}, pressure: {pressure})"
-                )
+            CanvasInput::BeginStroke(event) => {
+                write!(f, "StartStroke({event})")
             }
+            CanvasInput::ContinueStroke(event) => write!(f, "ContinueStroke({event})"),
+            CanvasInput::EndStroke(event) => write!(f, "EndStroke({event})"),
         }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PointerEvent {
+    pos_x: f32,
+    pos_y: f32,
+    pressure: f32,
+}
+impl Display for PointerEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{{pos: ({}, {}) pressure: {}}}",
+            self.pos_x, self.pos_y, self.pressure
+        )
     }
 }

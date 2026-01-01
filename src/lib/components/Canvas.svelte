@@ -2,17 +2,62 @@
     import { vec2 } from "gl-matrix";
     import { onMount } from "svelte";
     import { invoke } from "@tauri-apps/api/core";
+    import { Tool, getActiveTool } from "$lib/context/toolContext";
+
+    let toolState = getActiveTool();
+
+    let activeTool = $derived(toolState.tool);
 
     let scale = 1.0;
-    let originalOffsetX = 0.0;
-    let originalOffsetY = 0.0;
     let offsetX = 0.0;
     let offsetY = 0.0;
     let mouseX = 0.0;
     let mouseY = 0.0;
 
+    let isMouseDown = false;
+
     // this element is binded to the canvas
     let element: HTMLDivElement;
+
+    function handlePointerEnter(event: PointerEvent) {
+        console.log("pointer entered!", event);
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+        if (activeTool !== Tool.Brush) return;
+         
+        invoke('process_canvas_input', {
+            input: {
+                type: "beginStroke",
+                posX: event.pageX,
+                posY: event.pageY,
+                pressure: event.pointerType === "mouse" ? 1.0 : event.pressure
+            }
+        });
+    }
+    function handlePointerMove(event: PointerEvent) {
+        if (activeTool !== Tool.Brush || !isMouseDown) return;
+
+        invoke('process_canvas_input', {input: {
+            type: "continueStroke",
+            posX: event.pageX,
+            posY: event.pageY,
+            pressure: event.pointerType === "mouse" ? 1.0 : event.pressure
+        }});
+    }
+
+    function handlePointerUp(event: PointerEvent) {
+        if(activeTool !== Tool.Brush) return;
+
+        console.log("PointerUpEvent", event.pressure);
+        invoke('process_canvas_input', {input: {
+            type: "endStroke",
+            posX: event.pageX,
+            posY: event.pageY,
+            pressure: event.pressure
+        }})
+    }
+    
 
     function zoomRelativeToPoint(
         zoom: number,
@@ -40,19 +85,33 @@
         const rect = element.getBoundingClientRect();
         const dpr = window.devicePixelRatio;
         console.log("dpr", dpr);
-        originalOffsetX = rect.x * dpr;
-        originalOffsetY = rect.y * dpr;
-        console.log("huh");
-        invoke("set_view", {
-            offsetX: -originalOffsetX + offsetX,
-            offsetY: -originalOffsetY + offsetY,
-        });
+    }
+
+    function handleMouseDown(_event: MouseEvent) {
+        isMouseDown = true;
+    }
+
+    function handleMouseLeave(_event: MouseEvent) {
+        isMouseDown = false;
+    }
+
+    function handleMouseUp(_event: MouseEvent) {
+        isMouseDown = false;
     }
 
     function handleMouseMove(event: MouseEvent) {
-        mouseX = event.offsetX;
-        mouseY = event.offsetY;
-        // console.log("mouseX", mouseX, "mouseY", mouseY);
+        if (isMouseDown && activeTool === Tool.Pan) {
+            offsetX -= event.movementX;
+            offsetY -= event.movementY;
+            invoke("process_canvas_input", {input: {
+                type: "panCanvas",
+                offsetX,
+                offsetY
+            }});
+        }
+
+        mouseX = event.pageX;
+        mouseY = event.pageY;
     }
 
     function handleWheel(event: WheelEvent) {
@@ -92,24 +151,21 @@
             invoke("process_canvas_input", {
                 input: {
                     type: "panCanvas",
-                    offsetX: offsetX - originalOffsetX,
-                    offsetY: offsetY - originalOffsetY,
+                    offsetX,
+                    offsetY,
                 },
             });
-
-            console.log("Zoom scale:", ":3 " + scale);
         } else {
             /* Pan gestures */
             event.preventDefault();
             offsetX += event.deltaX * 2.0;
             offsetY += event.deltaY * 2.0;
-            console.log("offset_x", offsetX, "offset_y", offsetY);
 
             invoke("process_canvas_input", {
                 input: {
                     type: "panCanvas",
-                    offsetX: offsetX - originalOffsetX,
-                    offsetY: offsetY - originalOffsetY,
+                    offsetX: offsetX,
+                    offsetY: offsetY,
                 },
             });
         }
@@ -136,12 +192,21 @@
     });
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
     class="canvas"
     role="application"
+    aria-label="dd"
     bind:this={element}
-    on:wheel={handleWheel}
-    on:mousemove={handleMouseMove}
+    onwheel={handleWheel}
+    onmousemove={handleMouseMove}
+    onmousedown={handleMouseDown}
+    onmouseleave={handleMouseLeave}
+    onmouseup={handleMouseUp}
+    onpointerenter={handlePointerEnter}
+    onpointermove={handlePointerMove}
+    onpointerdown={handlePointerDown}
+    onpointerup={handlePointerUp}
 ></div>
 
 <style>

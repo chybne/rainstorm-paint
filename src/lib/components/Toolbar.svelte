@@ -2,12 +2,6 @@
     import ToolbarButton from "$lib/components/ToolbarButton.svelte";
     import { ToolData, Tool, getActiveTool, selectTool } from "$lib/context/toolContext";
 
-    
-    let selectedTool = $state({
-        tool: Tool.Pan,
-    });
-    selectTool(selectedTool);
-
     let activeTool = getActiveTool();
    
 </script>
@@ -19,7 +13,7 @@
             Label={tool.label}
             isActive={tool.tool === activeTool.tool}
             onclick={() => {
-                selectedTool.tool = tool.tool;
+                activeTool.tool = tool.tool;
             }}
         />
     {/each}

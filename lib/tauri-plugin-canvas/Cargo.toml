@@ -14,7 +14,7 @@ glam = { workspace = true }
 tauri = { version = "2.9.5" }
 tauri-runtime-wry = "2.9.3"
 bytemuck = "1.24.0"
-wgpu = "28.0.0"
+wgpu = "27"
 anyhow = { workspace = true }
 tauri-runtime = "2.9.2"
 serde = "1.0"

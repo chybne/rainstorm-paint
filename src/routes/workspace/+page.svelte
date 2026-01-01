@@ -1,6 +1,10 @@
 <script>
     import Canvas from "$lib/components/Canvas.svelte";
     import Toolbar from "$lib/components/Toolbar.svelte";
+    import { Tool, selectTool } from "$lib/context/toolContext";
+
+    let toolState = $state({ tool: Tool.Pan });
+    selectTool(toolState);
 </script>
 
 <main class="container">

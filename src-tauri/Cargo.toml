@@ -33,10 +33,8 @@ tauri = { version = "2.9.5", features = [
 tauri-plugin-opener = "2"
 tauri-plugin-canvas = { workspace = true }
 canvas = { workspace = true }
-input = { workspace = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-wgpu = "28.0.0"
 bytemuck = "1.24.0"
 tauri-plugin-os = "2"
 enigo = "0.6.1"

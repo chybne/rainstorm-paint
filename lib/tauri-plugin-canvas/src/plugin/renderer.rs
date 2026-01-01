@@ -120,7 +120,7 @@ impl RenderState {
                         &texture.texture_bind_group_layout,
                         &texture.uniform_bind_group_layout,
                     ],
-                    immediate_size: 0,
+                    push_constant_ranges: &[],
                 });
         let render_pipeline = self
             .device
@@ -159,7 +159,7 @@ impl RenderState {
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                multiview_mask: None,
+                multiview: None,
                 cache: None,
             });
 
@@ -235,7 +235,6 @@ impl RenderState {
                         store: wgpu::StoreOp::Store,
                     },
                 })],
-                multiview_mask: None,
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
