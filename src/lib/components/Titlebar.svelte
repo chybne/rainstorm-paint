@@ -100,6 +100,11 @@
 </div>
 
 <style>
+    *[data-tauri-drag-region] {
+        /* app-region is tauri specific */
+        app-region: drag;
+    }
+
     .titlebar {
         height: 34px;
         background-color: var(--background);

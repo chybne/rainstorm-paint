@@ -9,7 +9,10 @@ export let offsetY = 0.0;
 export let mouseX = 0.0;
 export let mouseY = 0.0;
 
-export let isPointerDown = false;
+let isPointerDown = $state(false);
+export function getIsPointerDown(): boolean {
+    return isPointerDown;
+}
 export function setIsPointerDown(bool: boolean) {
     isPointerDown = bool;
 }
@@ -30,8 +33,6 @@ abstract class ToolStrategy {
 
 class BrushToolStrategy extends ToolStrategy {
     handlePointerDown(event: PointerEvent): void {
-        isPointerDown = true;
-
         invoke('process_canvas_input', {
             input: {
                 type: "beginStroke",
@@ -52,7 +53,6 @@ class BrushToolStrategy extends ToolStrategy {
         }});
     }
     handlePointerUp(event: PointerEvent): void {
-        isPointerDown = false;
         invoke('process_canvas_input', {input: {
             type: "endStroke",
             posX: event.pageX,
@@ -64,7 +64,6 @@ class BrushToolStrategy extends ToolStrategy {
 
 class PanToolStrategy extends ToolStrategy {
     handlePointerDown(event: PointerEvent): void {
-        isPointerDown = true;
     }
 
     handlePointerMove(event: PointerEvent): void {
@@ -79,7 +78,6 @@ class PanToolStrategy extends ToolStrategy {
         }});
     }
     handlePointerUp(event: PointerEvent): void {
-        isPointerDown = false;
     }
 }
 
@@ -92,6 +90,7 @@ export const ToolStrategies: Record<Tool, ToolStrategy> = {
     [Tool.ColorPicker]: new UnimplementedToolStrategy(),
     [Tool.Eraser]: new UnimplementedToolStrategy(),
     [Tool.Lasso]: new UnimplementedToolStrategy(),
+    [Tool.Search]: new UnimplementedToolStrategy(),
 } as const;
 
 

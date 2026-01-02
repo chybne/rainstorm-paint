@@ -9,6 +9,16 @@ pub struct StrokePositionalData {
     pub pressure: f32,
 }
 
+impl Clone for StrokePositionalData {
+    fn clone(&self) -> Self {
+        Self {
+            x: self.x,
+            y: self.y,
+            pressure: self.pressure,
+        }
+    }
+}
+
 pub struct StrokeManager {
     current_stroke: Option<Stroke>,
 }
@@ -21,6 +31,37 @@ impl StrokeManager {
             current_stroke: None,
         }
     }
+    /* Temporary, this type of stuff should be seperated in a Brush engine object */
+    fn draw_circle(size: usize, point: &StrokePositionalData, canvas: &mut Canvas) {
+        let radius = (size / 2) as isize;
+        let cx = point.x as isize;
+        let cy = point.y as isize;
+
+        let r2 = radius * radius;
+
+        for y in (cy - radius)..=(cy + radius) {
+            for x in (cx - radius)..=(cx + radius) {
+                let dx = x - cx;
+                let dy = y - cy;
+
+                if dx * dx + dy * dy <= r2 {
+                    // Bounds check before casting
+                    if x >= 0 && y >= 0 {
+                        canvas.draw_pixel(
+                            x as usize,
+                            y as usize,
+                            Color {
+                                r: 0,
+                                g: 0,
+                                b: 0,
+                                a: 1,
+                            },
+                        );
+                    }
+                }
+            }
+        }
+    }
 
     /// Begin recording positional data for current stroke
     pub fn begin_stroke(&mut self, point: StrokePositionalData, canvas: &mut Canvas) {
@@ -30,16 +71,18 @@ impl StrokeManager {
         let (x, y) = canvas.translate_screen_to_canvas(point.x, point.y);
         let point = StrokePositionalData { x, y, ..point };
 
-        canvas.draw_pixel(
-            x as usize,
-            y as usize,
-            Color {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0,
-            },
-        );
+        // canvas.draw_pixel(
+        //     x as usize,
+        //     y as usize,
+        //     Color {
+        //         r: 0,
+        //         g: 0,
+        //         b: 0,
+        //         a: 0,
+        //     },
+        // );
+        Self::draw_circle(12, &point, canvas);
+
         new_stroke.add_point(point);
 
         self.current_stroke = Some(new_stroke);
@@ -60,16 +103,18 @@ impl StrokeManager {
         println!("points: {points:?}");
 
         for p in points.into_iter() {
-            canvas.draw_pixel(
-                p.x as usize,
-                p.y as usize,
-                Color {
-                    r: 0,
-                    g: 0,
-                    b: 0,
-                    a: 0,
-                },
-            );
+            // canvas.draw_pixel(
+            //     p.x as usize,
+            //     p.y as usize,
+            //     Color {
+            //         r: 0,
+            //         g: 0,
+            //         b: 0,
+            //         a: 0,
+            //     },
+            // );
+
+            Self::draw_circle(12, &p, canvas);
         }
     }
 
@@ -77,18 +122,18 @@ impl StrokeManager {
         println!("ended stroke: (x: {}, y: {})", point.x, point.y);
 
         let (x, y) = canvas.translate_screen_to_canvas(point.x, point.y);
-
-        canvas.draw_pixel(
-            x as usize,
-            y as usize,
-            Color {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0,
-            },
-        );
-
+        let point = StrokePositionalData { x, y, ..point };
+        // canvas.draw_pixel(
+        //     x as usize,
+        //     y as usize,
+        //     Color {
+        //         r: 0,
+        //         g: 0,
+        //         b: 0,
+        //         a: 0,
+        //     },
+        // );
+        Self::draw_circle(12, &point, canvas);
         self.current_stroke = None;
     }
 }

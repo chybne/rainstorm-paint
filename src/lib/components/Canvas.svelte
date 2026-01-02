@@ -1,17 +1,21 @@
 <script lang="ts">
-    import { vec2 } from "gl-matrix";
     import { onMount } from "svelte";
-    import { invoke } from "@tauri-apps/api/core";
-    import { Tool, getActiveTool } from "$lib/context/toolContext";
-    import { ToolStrategies, handleMagnifyGesture, handlePanGesture} from "./canvas/canvas";
+    import { getActiveTool, Tool } from "$lib/context/toolContext";
+    import { ToolStrategies, handleMagnifyGesture, handlePanGesture, getIsPointerDown, setIsPointerDown } from "./canvas/canvas.svelte";
+
 
 
     let toolState = getActiveTool();
 
-    let activeTool = $derived(toolState.tool);
+    let activeTool = $derived(toolState.tool);    
 
     // this element is binded to the canvas
     let element: HTMLDivElement;
+
+    $effect(() => {
+        element.style.cursor = activeTool === Tool.Pan ? (getIsPointerDown() ? 'grabbing' : 'grab') : 'default';
+    })
+
 
     function handlePointerEnter(event: PointerEvent) {
         console.log("pointer entered!", event);
@@ -20,6 +24,7 @@
     function handlePointerDown(event: PointerEvent) {
         event.preventDefault();
 
+        setIsPointerDown(true);
         console.log("pointer down");
         ToolStrategies[activeTool]?.handlePointerDown(event);
     }
@@ -32,6 +37,8 @@
 
     function handlePointerUp(event: PointerEvent) {
         event.preventDefault();
+
+        setIsPointerDown(false);
         console.log("pointer up");
         ToolStrategies[activeTool]?.handlePointerUp(event);
     }

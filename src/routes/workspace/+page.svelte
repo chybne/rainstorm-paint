@@ -8,7 +8,7 @@
 </script>
 
 <main class="container">
-    <div class="toolbar"></div>
+    <!-- <div class="toolbar"></div> -->
     <div class="test-base">
         <Toolbar />
         <Canvas />
