@@ -24,13 +24,13 @@
         height: 100%;
     }
 
-    .toolbar {
+    /* .toolbar {
         display: flex;
         align-items: center;
         border-bottom: 1px solid var(--background-dark);
         height: 3rem;
         background-color: var(--background);
-    }
+    } */
 
     .test-base {
         flex: 1;

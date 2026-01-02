@@ -7,7 +7,7 @@ export enum Tool {
     Lasso = "lasso",
     ColorPicker = "color-picker",
     Pan = "pan",
-    Search = "search"
+    Magnify = "search"
 }
 
 export const ToolData: Readonly<Array<{tool: Tool, icon: Component; label: string}>> = [
@@ -18,7 +18,7 @@ export const ToolData: Readonly<Array<{tool: Tool, icon: Component; label: strin
     // { tool: Tool.Lasso, icon: Lasso, label: "Lasso"},
     { tool: Tool.ColorPicker, icon: Pipette, label: "Color Picker"},
     { tool: Tool.Pan, icon: Hand, label: "Pan"},
-    { tool : Tool.Search, icon: Search, label: "Magnify"}
+    { tool : Tool.Magnify, icon: Search, label: "Magnify"}
 ] as const;  
 
 const [getActiveToolContext, setActiveToolContext] = createContext<{tool: Tool}>();

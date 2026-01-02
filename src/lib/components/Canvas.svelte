@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { getActiveTool, Tool } from "$lib/context/toolContext";
-    import { ToolStrategies, handleMagnifyGesture, handlePanGesture, getIsPointerDown, setIsPointerDown } from "./canvas/canvas.svelte";
+    import { ToolStrategies, handleMagnifyGesture, handlePanGesture, getIsPointerDown, setIsPointerDown, fitToView} from "./canvas/toolStrategies.svelte";
 
 
 
@@ -64,6 +64,7 @@
 
     onMount(() => {
         updateRect();
+        fitToView(element);
 
         const resizeObserver = new ResizeObserver(updateRect);
         resizeObserver.observe(element);

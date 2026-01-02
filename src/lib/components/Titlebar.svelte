@@ -102,7 +102,7 @@
 <style>
     *[data-tauri-drag-region] {
         /* app-region is tauri specific */
-        app-region: drag;
+        -webkit-app-region: drag;
     }
 
     .titlebar {

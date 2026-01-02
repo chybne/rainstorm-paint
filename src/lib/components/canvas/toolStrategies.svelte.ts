@@ -3,6 +3,7 @@ import { vec2 } from "gl-matrix";
 import { Tool } from "$lib/context/toolContext";
 
 
+/* maybe seperate this variables into their own file */
 export let scale = 1.0;
 export let offsetX = 0.0;
 export let offsetY = 0.0;
@@ -81,20 +82,6 @@ class PanToolStrategy extends ToolStrategy {
     }
 }
 
-
-
-class UnimplementedToolStrategy extends ToolStrategy {}
-export const ToolStrategies: Record<Tool, ToolStrategy> = {
-    [Tool.Brush]: new BrushToolStrategy(),
-    [Tool.Pan]: new PanToolStrategy(),
-    [Tool.ColorPicker]: new UnimplementedToolStrategy(),
-    [Tool.Eraser]: new UnimplementedToolStrategy(),
-    [Tool.Lasso]: new UnimplementedToolStrategy(),
-    [Tool.Search]: new UnimplementedToolStrategy(),
-} as const;
-
-
-
 function zoomRelativeToPoint(
     zoom: number,
     mouseX: number,
@@ -113,6 +100,65 @@ function zoomRelativeToPoint(
 
     return [newCoords[0], newCoords[1]];
 }
+
+
+class MagnifyToolStrategy extends ToolStrategy {
+    startPosX = 0;
+    startPosY = 0;
+
+    handlePointerDown(event: PointerEvent): void {
+        this.startPosX = event.pageX;
+        this.startPosY = event.pageY;
+    }
+
+    handlePointerMove(event: PointerEvent): void {
+        if (!isPointerDown) return;
+
+        const dpr = window.devicePixelRatio;
+
+
+        
+        const zoomFactor = 1 + event.movementX * 0.01;
+        let newScale = scale * zoomFactor;
+        
+        newScale = Math.min(Math.max(newScale, 0.3), 5.0);
+        const [newOffsetX, newOffsetY] = zoomRelativeToPoint(newScale, this.startPosX * dpr, this.startPosY * dpr);
+        scale = newScale;
+        offsetX = newOffsetX;
+        offsetY = newOffsetY;
+
+        invoke("process_canvas_input", {
+            input: {
+                type: "zoomCanvas",
+                zoom: scale,
+            },
+        });
+        invoke("process_canvas_input", {
+            input: {
+                type: "panCanvas",
+                offsetX,
+                offsetY,
+            },
+        });
+    }
+
+    handlePointerUp(event: PointerEvent): void {
+        this.startPosX = 0;
+        this.startPosY = 0;
+    }
+
+}
+
+
+class UnimplementedToolStrategy extends ToolStrategy {}
+export const ToolStrategies: Record<Tool, ToolStrategy> = {
+    [Tool.Brush]: new BrushToolStrategy(),
+    [Tool.Pan]: new PanToolStrategy(),
+    [Tool.ColorPicker]: new UnimplementedToolStrategy(),
+    [Tool.Eraser]: new UnimplementedToolStrategy(),
+    [Tool.Lasso]: new UnimplementedToolStrategy(),
+    [Tool.Magnify]: new MagnifyToolStrategy(),
+} as const;
 
 export function handleMagnifyGesture(event: WheelEvent) {
     const dpr = window.devicePixelRatio;
@@ -167,3 +213,25 @@ export function handlePanGesture(event: WheelEvent) {
     });
 }
 
+
+/* To be Moved 
+ * ALSO CANT REALLY DO THIS
+ * WITHOUT KNOW CANVAS
+ * SIZE AFTER SCALED SO
+ * RIGHT NOW ITS JUST THE TOP 
+ * LEFT CORNER
+*/
+export function fitToView(view: HTMLDivElement) {
+    let boundingRect = view.getBoundingClientRect()
+    offsetX = -boundingRect.x;
+    offsetY = -boundingRect.y;
+
+    invoke("process_canvas_input", {
+        input: {
+            type: "panCanvas",
+            offsetX: offsetX,
+            offsetY: offsetY,
+        },
+    });
+
+} 
