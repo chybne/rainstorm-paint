@@ -2,7 +2,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { vec2 } from "gl-matrix";
 import { Tool } from "$lib/context/toolContext";
 
-
 /* maybe seperate this variables into their own file */
 export let scale = 1.0;
 export let offsetX = 0.0;
@@ -20,66 +19,80 @@ export function setIsPointerDown(bool: boolean) {
 
 abstract class ToolStrategy {
     handlePointerDown(event: PointerEvent): void {
-        console.log(`${this.constructor.name} does not support handlePointerDown`);
+        console.log(
+            `${this.constructor.name} does not support handlePointerDown`,
+        );
     }
 
     handlePointerMove(event: PointerEvent): void {
-        console.log(`${this.constructor.name} does not support handlePointerMoved`);
+        console.log(
+            `${this.constructor.name} does not support handlePointerMoved`,
+        );
     }
 
     handlePointerUp(event: PointerEvent): void {
-        console.log(`${this.constructor.name} does not support handlePointerUp`);
+        console.log(
+            `${this.constructor.name} does not support handlePointerUp`,
+        );
     }
 }
 
 class BrushToolStrategy extends ToolStrategy {
     handlePointerDown(event: PointerEvent): void {
-        invoke('process_canvas_input', {
+        let dpr = window.devicePixelRatio;
+        invoke("process_canvas_input", {
             input: {
                 type: "beginStroke",
-                posX: event.pageX,
-                posY: event.pageY,
-                pressure: event.pointerType === "mouse" ? 1.0 : event.pressure
-            }
+                posX: event.pageX * dpr,
+                posY: event.pageY * dpr,
+                pressure: event.pointerType === "mouse" ? 1.0 : event.pressure,
+            },
         });
     }
     handlePointerMove(event: PointerEvent): void {
-        if (!isPointerDown) return;
+        let dpr = window.devicePixelRatio;
 
-        invoke('process_canvas_input', {input: {
-            type: "continueStroke",
-            posX: event.pageX,
-            posY: event.pageY,
-            pressure: event.pointerType === "mouse" ? 1.0 : event.pressure
-        }});
+        if (!isPointerDown) return;
+        invoke("process_canvas_input", {
+            input: {
+                type: "continueStroke",
+                posX: event.pageX * dpr,
+                posY: event.pageY * dpr,
+                pressure: event.pointerType === "mouse" ? 1.0 : event.pressure,
+            },
+        });
     }
     handlePointerUp(event: PointerEvent): void {
-        invoke('process_canvas_input', {input: {
-            type: "endStroke",
-            posX: event.pageX,
-            posY: event.pageY,
-            pressure: event.pressure
-        }})
+        let dpr = window.devicePixelRatio;
+
+        invoke("process_canvas_input", {
+            input: {
+                type: "endStroke",
+                posX: event.pageX * dpr,
+                posY: event.pageY * dpr,
+                pressure: event.pressure,
+            },
+        });
     }
 }
 
 class PanToolStrategy extends ToolStrategy {
-    handlePointerDown(event: PointerEvent): void {
-    }
+    handlePointerDown(event: PointerEvent): void {}
 
     handlePointerMove(event: PointerEvent): void {
         if (!isPointerDown) return;
         offsetX -= event.movementX;
         offsetY -= event.movementY;
 
-        invoke('process_canvas_input', {input: {
-            type: "panCanvas",
-            offsetX,
-            offsetY
-        }});
+        invoke("process_canvas_input", {
+            input: {
+                type: "panCanvas",
+                offsetX,
+                offsetY,
+            },
+        });
     }
-    handlePointerUp(event: PointerEvent): void {
-    }
+    handlePointerUp(event: PointerEvent): void {}
 }
 
 function zoomRelativeToPoint(
@@ -101,7 +114,6 @@ function zoomRelativeToPoint(
     return [newCoords[0], newCoords[1]];
 }
 
-
 class MagnifyToolStrategy extends ToolStrategy {
     startPosX = 0;
     startPosY = 0;
@@ -116,13 +128,15 @@ class MagnifyToolStrategy extends ToolStrategy {
 
         const dpr = window.devicePixelRatio;
 
-
-        
         const zoomFactor = 1 + event.movementX * 0.01;
         let newScale = scale * zoomFactor;
-        
+
         newScale = Math.min(Math.max(newScale, 0.3), 5.0);
-        const [newOffsetX, newOffsetY] = zoomRelativeToPoint(newScale, this.startPosX * dpr, this.startPosY * dpr);
+        const [newOffsetX, newOffsetY] = zoomRelativeToPoint(
+            newScale,
+            this.startPosX * dpr,
+            this.startPosY * dpr,
+        );
         scale = newScale;
         offsetX = newOffsetX;
         offsetY = newOffsetY;
@@ -146,9 +160,7 @@ class MagnifyToolStrategy extends ToolStrategy {
         this.startPosX = 0;
         this.startPosY = 0;
     }
-
 }
-
 
 class UnimplementedToolStrategy extends ToolStrategy {}
 export const ToolStrategies: Record<Tool, ToolStrategy> = {
@@ -176,8 +188,8 @@ export function handleMagnifyGesture(event: WheelEvent) {
     newScale = Math.min(Math.max(newScale, 0.3), 5.0);
     const [newOffsetX, newOffsetY] = zoomRelativeToPoint(
         newScale,
-        mouseX * dpr,
-        mouseY * dpr,
+        event.pageX * dpr,
+        event.pageY * dpr,
     );
 
     scale = newScale;
@@ -199,7 +211,6 @@ export function handleMagnifyGesture(event: WheelEvent) {
     });
 }
 
-
 export function handlePanGesture(event: WheelEvent) {
     offsetX += event.deltaX * 2.0;
     offsetY += event.deltaY * 2.0;
@@ -213,16 +224,15 @@ export function handlePanGesture(event: WheelEvent) {
     });
 }
 
-
-/* To be Moved 
+/* To be Moved
  * ALSO CANT REALLY DO THIS
  * WITHOUT KNOW CANVAS
  * SIZE AFTER SCALED SO
- * RIGHT NOW ITS JUST THE TOP 
+ * RIGHT NOW ITS JUST THE TOP
  * LEFT CORNER
-*/
+ */
 export function fitToView(view: HTMLDivElement) {
-    let boundingRect = view.getBoundingClientRect()
+    let boundingRect = view.getBoundingClientRect();
     offsetX = -boundingRect.x;
     offsetY = -boundingRect.y;
 
@@ -233,5 +243,4 @@ export function fitToView(view: HTMLDivElement) {
             offsetY: offsetY,
         },
     });
-
-} 
+}
