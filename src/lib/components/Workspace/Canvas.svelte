@@ -10,10 +10,10 @@
     let activeTool = $derived(toolState.tool);    
 
     // this element is binded to the canvas
-    let element: HTMLDivElement;
+    let canvasElement: HTMLDivElement;
 
     $effect(() => {
-        element.style.cursor = activeTool === Tool.Pan ? (getIsPointerDown() ? 'grabbing' : 'grab') : 'default';
+        canvasElement.style.cursor = activeTool === Tool.Pan ? (getIsPointerDown() ? 'grabbing' : 'grab') : 'default';
     })
 
 
@@ -23,6 +23,8 @@
 
     function handlePointerDown(event: PointerEvent) {
         event.preventDefault();
+
+        canvasElement.setPointerCapture(event.pointerId);
 
         setIsPointerDown(true);
         console.log("pointer down");
@@ -38,18 +40,20 @@
     function handlePointerUp(event: PointerEvent) {
         event.preventDefault();
 
+        canvasElement.releasePointerCapture(event.pointerId);
+
         setIsPointerDown(false);
         console.log("pointer up");
         ToolStrategies[activeTool]?.handlePointerUp(event);
     }
 
     function updateRect() {
-        if (!element) {
+        if (!canvasElement) {
             return;
         }
-        const rect = element.getBoundingClientRect();
-        const dpr = window.devicePixelRatio;
-        console.log("dpr", dpr);
+
+        /*  update when canvas element size changes */
+
     }
 
     function handleWheel(event: WheelEvent) {
@@ -64,10 +68,10 @@
 
     onMount(() => {
         updateRect();
-        fitToView(element);
+        fitToView(canvasElement);
 
         const resizeObserver = new ResizeObserver(updateRect);
-        resizeObserver.observe(element);
+        resizeObserver.observe(canvasElement);
 
         // track movement (layout shifts)
         const mutationObserver = new MutationObserver(updateRect);
@@ -89,7 +93,7 @@
     class="canvas"
     role="application"
     aria-label="dd"
-    bind:this={element}
+    bind:this={canvasElement}
     onwheel={handleWheel}
     onpointerenter={handlePointerEnter}
     onpointermove={handlePointerMove}

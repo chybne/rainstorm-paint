@@ -1,6 +1,6 @@
 <script lang="ts">
-    import ToolbarButton from "$lib/components/ToolbarButton.svelte";
-    import { ToolData, Tool, getActiveTool, selectTool } from "$lib/context/toolContext";
+    import ToolbarButton from "$lib/components/Workspace/ToolbarButton.svelte";
+    import { ToolData, getActiveTool} from "$lib/context/toolContext";
 
     let activeTool = getActiveTool();
    

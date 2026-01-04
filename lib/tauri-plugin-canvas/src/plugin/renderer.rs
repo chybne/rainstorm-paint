@@ -227,9 +227,9 @@ impl RenderState {
                     ops: wgpu::Operations {
                         // load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.8,
-                            g: 0.8,
-                            b: 0.9,
+                            r: 0.6,
+                            g: 0.6,
+                            b: 0.75,
                             a: 1.0,
                         }),
                         store: wgpu::StoreOp::Store,

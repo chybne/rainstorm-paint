@@ -1,6 +1,7 @@
 <script>
-    import Canvas from "$lib/components/Canvas.svelte";
-    import Toolbar from "$lib/components/Toolbar.svelte";
+    import Canvas from "$lib/components/Workspace/Canvas.svelte";
+    import ColorWheel from "$lib/components/Workspace/ColorWheel.svelte";
+    import Toolbar from "$lib/components/Workspace/Toolbar.svelte";
     import { Tool, selectTool } from "$lib/context/toolContext";
 
     let toolState = $state({ tool: Tool.Pan });
@@ -8,10 +9,11 @@
 </script>
 
 <main class="container">
-    <!-- <div class="toolbar"></div> -->
+    <div class="toolbar"></div>
     <div class="test-base">
         <Toolbar />
         <Canvas />
+        <ColorWheel />
     </div>
     <div class="test2"></div>
 </main>
@@ -24,13 +26,13 @@
         height: 100%;
     }
 
-    /* .toolbar {
+    .toolbar {
         display: flex;
         align-items: center;
         border-bottom: 1px solid var(--background-dark);
         height: 3rem;
         background-color: var(--background);
-    } */
+    }
 
     .test-base {
         flex: 1;
