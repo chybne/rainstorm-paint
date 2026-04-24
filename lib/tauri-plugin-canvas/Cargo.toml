@@ -11,8 +11,8 @@ links = "tauri-plugin-canvas"
 [dependencies]
 canvas = { workspace = true }
 glam = { workspace = true }
-tauri = { version = "2.9.5" }
-tauri-runtime-wry = "2.9.3"
+tauri = { version = "2.10" }
+tauri-runtime-wry = "2.10"
 bytemuck = "1.24.0"
 wgpu = "27"
 anyhow = { workspace = true }

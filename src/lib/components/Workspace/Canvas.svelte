@@ -1,27 +1,37 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { getActiveTool, Tool } from "$lib/context/toolContext";
-    import { ToolStrategies, handleMagnifyGesture, handlePanGesture, getIsPointerDown, setIsPointerDown, fitToView} from "./canvas/toolStrategies.svelte";
-
-
-
+    import {
+        ToolStrategies,
+        handleMagnifyGesture,
+        handlePanGesture,
+        getIsPointerDown,
+        setIsPointerDown,
+        fitToView,
+    } from "./canvas/toolStrategies.svelte";
     let toolState = getActiveTool();
 
-    let activeTool = $derived(toolState.tool);    
+    let activeTool = $derived(toolState.tool);
 
     // this element is binded to the canvas
     let canvasElement: HTMLDivElement;
 
     $effect(() => {
-        canvasElement.style.cursor = activeTool === Tool.Pan ? (getIsPointerDown() ? 'grabbing' : 'grab') : 'default';
-    })
-
+        canvasElement.style.cursor =
+            activeTool === Tool.Pan
+                ? getIsPointerDown()
+                    ? "grabbing"
+                    : "grab"
+                : "default";
+    });
 
     function handlePointerEnter(event: PointerEvent) {
         console.log("pointer entered!", event);
     }
 
     function handlePointerDown(event: PointerEvent) {
+        const MOUSE_LEFT = 0;
+        if (event.button != MOUSE_LEFT) return;
         event.preventDefault();
 
         canvasElement.setPointerCapture(event.pointerId);
@@ -33,7 +43,7 @@
     function handlePointerMove(event: PointerEvent) {
         event.preventDefault();
 
-        console.log("pointer moved")
+        console.log("pointer moved");
         ToolStrategies[activeTool]?.handlePointerMove(event);
     }
 
@@ -53,7 +63,6 @@
         }
 
         /*  update when canvas element size changes */
-
     }
 
     function handleWheel(event: WheelEvent) {

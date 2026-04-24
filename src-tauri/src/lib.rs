@@ -62,12 +62,12 @@ pub fn run() {
              * to directly customize the titlebar on windows
              */
 
-            let window = app
-                .get_webview_window("main")
-                .expect("there should be a main window");
-
             #[cfg(target_os = "windows")]
             {
+                let window = app
+                    .get_webview_window("main")
+                    .expect("there should be a main window");
+
                 window.set_decorations(false)?;
             }
 

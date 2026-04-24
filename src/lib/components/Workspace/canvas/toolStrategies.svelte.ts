@@ -81,8 +81,9 @@ class PanToolStrategy extends ToolStrategy {
 
     handlePointerMove(event: PointerEvent): void {
         if (!isPointerDown) return;
-        offsetX -= event.movementX;
-        offsetY -= event.movementY;
+        let dpr = window.devicePixelRatio;
+        offsetX -= event.movementX * dpr;
+        offsetY -= event.movementY * dpr;
 
         invoke("process_canvas_input", {
             input: {
@@ -233,8 +234,9 @@ export function handlePanGesture(event: WheelEvent) {
  */
 export function fitToView(view: HTMLDivElement) {
     let boundingRect = view.getBoundingClientRect();
-    offsetX = -boundingRect.x;
-    offsetY = -boundingRect.y;
+    let dpr = window.devicePixelRatio;
+    offsetX = -boundingRect.x * dpr;
+    offsetY = -boundingRect.y * dpr;
 
     invoke("process_canvas_input", {
         input: {
