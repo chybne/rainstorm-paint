@@ -71,16 +71,6 @@ impl StrokeManager {
         let (x, y) = canvas.translate_screen_to_canvas(point.x, point.y);
         let point = StrokePositionalData { x, y, ..point };
 
-        // canvas.draw_pixel(
-        //     x as usize,
-        //     y as usize,
-        //     Color {
-        //         r: 0,
-        //         g: 0,
-        //         b: 0,
-        //         a: 0,
-        //     },
-        // );
         Self::draw_circle(12, &point, canvas);
 
         new_stroke.add_point(point);
@@ -103,17 +93,6 @@ impl StrokeManager {
         println!("points: {points:?}");
 
         for p in points.into_iter() {
-            // canvas.draw_pixel(
-            //     p.x as usize,
-            //     p.y as usize,
-            //     Color {
-            //         r: 0,
-            //         g: 0,
-            //         b: 0,
-            //         a: 0,
-            //     },
-            // );
-
             Self::draw_circle(12, &p, canvas);
         }
     }
@@ -150,7 +129,7 @@ impl Stroke {
         Self {
             position_data: vec![],
             accumulated_distance: 0.0,
-            spacing: 1.0,
+            spacing: 5.0,
         }
     }
     /// adds a new location point data to the end of the internally stored vec

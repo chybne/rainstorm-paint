@@ -38,7 +38,8 @@ impl Default for Canvas {
 impl Canvas {
     /// Creates a new canvas with specified width and height
     pub fn new(width: usize, height: usize) -> Self {
-        let pattern = [97, 152, 219, 255];
+        // let pattern = [97, 152, 219, 255];
+        let pattern = [255, 255, 255, 255];
         let pixels: Vec<u8> = pattern
             .iter()
             .cycle()
@@ -114,7 +115,7 @@ impl Canvas {
             .to_cols_array_2d()
     }
 
-    pub fn draw_pixel(&mut self, x: usize, y: usize, color: Color) {
+    pub fn draw_pixel(&mut self, x: usize, y: usize, color: Color<u8>) {
         if x >= self.width || y >= self.height {
             return;
         }
