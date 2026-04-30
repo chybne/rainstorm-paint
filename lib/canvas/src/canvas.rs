@@ -123,8 +123,8 @@ impl Canvas {
         let position = ((y * self.width + x) * 4) as usize;
 
         self.pixels[position] = color.r;
-        self.pixels[position + 1] = color.b;
-        self.pixels[position + 2] = color.g;
+        self.pixels[position + 1] = color.g;
+        self.pixels[position + 2] = color.b;
         self.pixels[position + 3] = color.a;
     }
 

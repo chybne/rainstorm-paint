@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use canvas::brush::stroke::StrokePositionalData;
+use canvas::{brush::stroke::StrokePositionalData, Color};
 use serde::{Deserialize, Serialize};
 
 /// All of the different actions the user can perform on the canvas
@@ -46,6 +46,7 @@ pub struct PointerEvent {
     pos_x: f32,
     pos_y: f32,
     pressure: f32,
+    color: (f32, f32, f32, f32),
 }
 impl Display for PointerEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -62,6 +63,7 @@ impl From<PointerEvent> for StrokePositionalData {
             x: value.pos_x,
             y: value.pos_y,
             pressure: value.pressure,
+            color: Color::new_f32(value.color.0, value.color.1, value.color.2, value.color.3),
         }
     }
 }

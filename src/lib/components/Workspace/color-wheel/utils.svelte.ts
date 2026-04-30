@@ -21,7 +21,8 @@ export function getAngleFromPoint(dx: number, dy: number): number {
     let angle = Math.atan2(dy, dx); // -PI → PI
     angle = (angle + 2 * Math.PI) % (2 * Math.PI); // 0 → 2PI
 
-    return angle;
+    let hue = angle / (2 * Math.PI);
+    return (hue + 0.5) % 1.0;
 }
 export function angleToHue(angle: number): number {
     const hue = (angle / (2 * Math.PI)) * 360;
@@ -31,11 +32,11 @@ export function angleToHue(angle: number): number {
     adjustedHue /= 360;
     return adjustedHue;
 }
-export function hueToAngle(hue: number): number {
-    hue *= 360;
-    let adjustedHue = (hue + 180) % 360;
 
-    const angle = (adjustedHue / 360) * (2 * Math.PI);
+export function hueToAngle(hue: number): number {
+    hue = (hue + 0.5) % 1.0;
+
+    const angle = hue * (2 * Math.PI);
     return angle;
 }
 
@@ -335,14 +336,13 @@ export class ColorWheel {
         if (distance > this.innerCircleRadius && distance < this.circleRadius) {
             this.selectPhase = SelectingPhase.IsSelectingHue;
 
-            const angle = getAngleFromPoint(dx, dy);
-
-            let hue = angleToHue(angle);
+            const hue = getAngleFromPoint(dx, dy);
 
             return new Color(
                 hue,
                 prevColor.getSaturation(),
                 prevColor.getValue(),
+                1.0,
             );
         }
 
@@ -362,7 +362,7 @@ export class ColorWheel {
             let rangeY = 1 - (y - startY) / size;
 
             console.log(`clicked inside of square ${rangeX} ${rangeY}`);
-            return new Color(prevColor.getHue(), rangeX, rangeY);
+            return new Color(prevColor.getHue(), rangeX, rangeY, 1.0);
         }
 
         return null;
@@ -376,14 +376,15 @@ export class ColorWheel {
             const dx = x - centerX;
             const dy = y - centerY;
 
-            const angle = getAngleFromPoint(dx, dy);
-            let hue = angleToHue(angle);
+            const hue = getAngleFromPoint(dx, dy);
+            console.log("hue {}", Math.round(hue * 360.0));
 
             console.log("Selected color:", hue);
             return new Color(
                 hue,
                 prevColor.getSaturation(),
                 prevColor.getValue(),
+                1.0,
             );
         }
 
@@ -399,7 +400,7 @@ export class ColorWheel {
             let rangeY = 1 - (y - startY) / size;
 
             console.log(`moved inside of square ${rangeX} ${rangeY}`);
-            return new Color(prevColor.getHue(), rangeX, rangeY);
+            return new Color(prevColor.getHue(), rangeX, rangeY, 1.0);
         }
     }
 

@@ -7,6 +7,7 @@ pub struct StrokePositionalData {
     pub x: f32,
     pub y: f32,
     pub pressure: f32,
+    pub color: Color<u8>,
 }
 
 impl Clone for StrokePositionalData {
@@ -15,6 +16,7 @@ impl Clone for StrokePositionalData {
             x: self.x,
             y: self.y,
             pressure: self.pressure,
+            color: self.color,
         }
     }
 }
@@ -33,6 +35,7 @@ impl StrokeManager {
     }
     /* Temporary, this type of stuff should be seperated in a Brush engine object */
     fn draw_circle(size: usize, point: &StrokePositionalData, canvas: &mut Canvas) {
+        let color = point.color;
         let radius = (size / 2) as isize;
         let cx = point.x as isize;
         let cy = point.y as isize;
@@ -51,10 +54,10 @@ impl StrokeManager {
                             x as usize,
                             y as usize,
                             Color {
-                                r: 0,
-                                g: 0,
-                                b: 0,
-                                a: 1,
+                                r: color.r,
+                                g: color.g,
+                                b: color.b,
+                                a: color.a,
                             },
                         );
                     }
@@ -159,6 +162,7 @@ impl Stroke {
                 x: from.x,
                 y: from.y,
                 pressure: point.pressure,
+                color: point.color,
             };
             self.position_data.push(positional_data);
             self.accumulated_distance -= self.spacing;

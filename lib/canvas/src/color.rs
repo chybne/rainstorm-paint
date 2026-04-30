@@ -30,7 +30,7 @@ impl From<ColorF32> for f32 {
 }
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Copy)]
 pub struct Color<T> {
     pub r: T,
     pub g: T,
@@ -59,6 +59,17 @@ impl From<Color<ColorF32>> for Color<u8> {
             g: to_u8(value.g),
             b: to_u8(value.b),
             a: to_u8(value.a),
+        }
+    }
+}
+
+impl<T: Copy> Clone for Color<T> {
+    fn clone(&self) -> Self {
+        Self {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: self.a,
         }
     }
 }

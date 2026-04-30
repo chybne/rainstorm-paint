@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { vec2 } from "gl-matrix";
 import { Tool } from "$lib/context/toolContext";
+import { appState } from "$lib/state/AppState.svelte";
 
 /* maybe seperate this variables into their own file */
 export let scale = 1.0;
@@ -46,12 +47,14 @@ class BrushToolStrategy extends ToolStrategy {
                 posX: event.pageX * dpr,
                 posY: event.pageY * dpr,
                 pressure: event.pointerType === "mouse" ? 1.0 : event.pressure,
+                color: appState.getColor().toRGB(),
             },
         });
     }
     handlePointerMove(event: PointerEvent): void {
         let dpr = window.devicePixelRatio;
 
+        console.log("color {}", appState.getColor().toRGB());
         if (!isPointerDown) return;
         invoke("process_canvas_input", {
             input: {
@@ -59,6 +62,7 @@ class BrushToolStrategy extends ToolStrategy {
                 posX: event.pageX * dpr,
                 posY: event.pageY * dpr,
                 pressure: event.pointerType === "mouse" ? 1.0 : event.pressure,
+                color: appState.getColor().toRGB(),
             },
         });
     }
@@ -71,6 +75,7 @@ class BrushToolStrategy extends ToolStrategy {
                 posX: event.pageX * dpr,
                 posY: event.pageY * dpr,
                 pressure: event.pressure,
+                color: appState.getColor().toRGB(),
             },
         });
     }
